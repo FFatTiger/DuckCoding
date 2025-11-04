@@ -48,11 +48,12 @@ interface SortableProfileItemProps {
   profile: string;
   toolId: string;
   switching: boolean;
+  deleting: string | null;
   onSwitch: (toolId: string, profile: string) => void;
   onDelete: (toolId: string, profile: string) => void;
 }
 
-function SortableProfileItem({ profile, toolId, switching, onSwitch, onDelete }: SortableProfileItemProps) {
+function SortableProfileItem({ profile, toolId, switching, deleting, onSwitch, onDelete }: SortableProfileItemProps) {
   const {
     attributes,
     listeners,
@@ -115,11 +116,20 @@ function SortableProfileItem({ profile, toolId, switching, onSwitch, onDelete }:
             console.log("Delete button clicked", { toolId, profile });
             onDelete(toolId, profile);
           }}
-          disabled={switching}
+          disabled={deleting === `${toolId}-${profile}` || switching}
           className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 dark:ring-offset-slate-950 dark:focus-visible:ring-slate-300 bg-red-500 text-white hover:bg-red-600 h-8 px-3 shadow-sm hover:shadow-md"
         >
-          <Trash2 className="h-3 w-3 mr-1" />
-          删除
+          {deleting === `${toolId}-${profile}` ? (
+            <>
+              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+              删除中...
+            </>
+          ) : (
+            <>
+              <Trash2 className="h-3 w-3 mr-1" />
+              删除
+            </>
+          )}
         </button>
       </div>
     </div>
@@ -136,6 +146,7 @@ function App() {
   const [updateCheckMessage, setUpdateCheckMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [configuring, setConfiguring] = useState(false);
   const [switching, setSwitching] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   // Ref to store timeout ID for cleanup
   const updateMessageTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -375,6 +386,12 @@ function App() {
       setLoading(true);
       const status = await checkInstallations();
       setTools(status);
+
+      // 自动检查已安装工具的更新
+      const installedTools = status.filter(t => t.installed);
+      if (installedTools.length > 0) {
+        checkUpdatesForInstalledTools(installedTools);
+      }
     } catch (error) {
       console.error("Failed to check installations:", error);
       setTools([
@@ -384,6 +401,38 @@ function App() {
       ]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 自动检查已安装工具的更新（后台静默检查）
+  const checkUpdatesForInstalledTools = async (installedTools: ToolStatus[]) => {
+    try {
+      const updatePromises = installedTools.map(async (tool) => {
+        try {
+          const result = await checkUpdate(tool.id);
+          return { toolId: tool.id, result };
+        } catch (error) {
+          console.error(`Failed to check update for ${tool.id}:`, error);
+          return { toolId: tool.id, result: null };
+        }
+      });
+
+      const results = await Promise.all(updatePromises);
+
+      // 更新工具状态，添加更新信息
+      setTools(prevTools => prevTools.map(tool => {
+        const updateInfo = results.find(r => r.toolId === tool.id);
+        if (updateInfo?.result) {
+          return {
+            ...tool,
+            hasUpdate: updateInfo.result.has_update,
+            latestVersion: updateInfo.result.latest_version || undefined
+          };
+        }
+        return tool;
+      }));
+    } catch (error) {
+      console.error("Failed to check updates:", error);
     }
   };
 
@@ -770,6 +819,9 @@ function App() {
       return;
     }
 
+    const deletingKey = `${toolId}-${profile}`;
+    setDeleting(deletingKey);
+
     try {
       console.log("Calling deleteProfile API...");
       await deleteProfile(toolId, profile);
@@ -797,6 +849,8 @@ function App() {
     } catch (error) {
       console.error("Failed to delete profile:", error);
       alert("删除失败: " + error);
+    } finally {
+      setDeleting(null);
     }
   };
 
@@ -927,7 +981,7 @@ function App() {
                                       <AlertCircle className="h-3.5 w-3.5" />需要更新
                                     </Badge>
                                   )}
-                                  {tool.installed && !tool.hasUpdate && (
+                                  {tool.installed && tool.hasUpdate === false && (
                                     <Badge variant="outline" className="gap-1.5 text-green-600 border-green-600 shadow-sm px-3 py-1">
                                       <CheckCircle2 className="h-3.5 w-3.5" />最新版本
                                     </Badge>
@@ -1436,6 +1490,7 @@ function App() {
                                             profile={profile}
                                             toolId={tool.id}
                                             switching={switching}
+                                            deleting={deleting}
                                             onSwitch={handleSwitchProfile}
                                             onDelete={handleDeleteProfile}
                                           />
