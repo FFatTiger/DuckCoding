@@ -8,9 +8,14 @@
 
 支持 Claude Code、CodeX、Gemini CLI
 
+[![GitHub Release](https://img.shields.io/github/v/release/DuckCoding-dev/DuckCoding)](https://github.com/DuckCoding-dev/DuckCoding/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey)]()
-[![Release](https://img.shields.io/github/v/release/DuckCoding-dev/DuckCoding)](https://github.com/DuckCoding-dev/DuckCoding/releases)
+[![GitHub Downloads](https://img.shields.io/github/downloads/DuckCoding-dev/DuckCoding/total)](https://github.com/DuckCoding-dev/DuckCoding/releases)
+[![GitHub Stars](https://img.shields.io/github/stars/DuckCoding-dev/DuckCoding)](https://github.com/DuckCoding-dev/DuckCoding/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/DuckCoding-dev/DuckCoding)](https://github.com/DuckCoding-dev/DuckCoding/network/members)
+[![GitHub Issues](https://img.shields.io/github/issues/DuckCoding-dev/DuckCoding)](https://github.com/DuckCoding-dev/DuckCoding/issues)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/DuckCoding-dev/DuckCoding/pulls)
 
 </div>
 
@@ -131,9 +136,9 @@ DuckCoding 要求每个工具使用对应的专用分组令牌：
 - 保存模型提供商配置和认证信息
 
 ### Gemini CLI
-- **位置**: `~/.gemini/.env` + `~/.gemini/settings.json`
+- **位置**: `~/.gemini/.env`（主要配置）+ `~/.gemini/settings.json`（认证设置）
 - **格式**: ENV + JSON
-- 保存环境变量和工具设置
+- 主要配置在 `.env` 文件，`settings.json` 仅用于指定认证类型
 
 ## 🔒 隐私和安全
 
@@ -161,6 +166,16 @@ DuckCoding 要求每个工具使用对应的专用分组令牌：
 ## ⚠️ 免责声明
 
 本工具仅用于简化 AI 编程工具的安装和配置流程，不提供 API 服务本身。使用第三方 API 服务时请遵守其服务条款。
+
+---
+
+## ⭐ Star History
+
+<div align="center">
+
+[![Star History Chart](https://api.star-history.com/svg?repos=DuckCoding-dev/DuckCoding&type=Date)](https://star-history.com/#DuckCoding-dev/DuckCoding&Date)
+
+</div>
 
 ---
 
