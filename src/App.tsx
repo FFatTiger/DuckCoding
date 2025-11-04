@@ -53,8 +53,6 @@ interface SortableProfileItemProps {
 }
 
 function SortableProfileItem({ profile, toolId, switching, onSwitch, onDelete }: SortableProfileItemProps) {
-  console.log("SortableProfileItem rendered", { profile, toolId, switching });
-
   const {
     attributes,
     listeners,
@@ -87,7 +85,6 @@ function SortableProfileItem({ profile, toolId, switching, onSwitch, onDelete }:
         <span className="font-medium text-slate-900 dark:text-slate-100">{profile}</span>
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-xs text-slate-500">switching: {switching ? 'true' : 'false'}</span>
         <Button
           size="sm"
           variant="outline"
@@ -113,23 +110,16 @@ function SortableProfileItem({ profile, toolId, switching, onSwitch, onDelete }:
         </Button>
         <button
           onClick={(e) => {
-            alert("删除按钮被点击了！profile: " + profile);
             e.stopPropagation();
             e.preventDefault();
             console.log("Delete button clicked", { toolId, profile });
-            console.log("onDelete function:", onDelete);
             onDelete(toolId, profile);
-          }}
-          onMouseDown={(e) => {
-            alert("mousedown");
-            console.log("Delete button mousedown");
           }}
           disabled={switching}
           className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 dark:ring-offset-slate-950 dark:focus-visible:ring-slate-300 bg-red-500 text-white hover:bg-red-600 h-8 px-3 shadow-sm hover:shadow-md"
-          style={{ pointerEvents: 'auto', zIndex: 10 }}
         >
           <Trash2 className="h-3 w-3 mr-1" />
-          删除{switching ? '(disabled)' : ''}
+          删除
         </button>
       </div>
     </div>
