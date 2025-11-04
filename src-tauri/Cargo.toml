@@ -1,6 +1,6 @@
 [package]
 name = "duckcoding"
-version = "1.0.7"
+version = "1.0.8"
 description = "DuckCoding AI 工具一键配置"
 authors = ["DuckCoding"]
 edition = "2021"
@@ -19,6 +19,10 @@ reqwest = { version = "0.12", features = ["json", "blocking"] }
 tokio = { version = "1", features = ["full"] }
 urlencoding = "2.1"
 regex = "1"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+cocoa = "0.25"
+objc = "0.2"
 
 [features]
 default = ["custom-protocol"]

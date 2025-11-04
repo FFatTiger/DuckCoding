@@ -88,10 +88,7 @@ function SortableProfileItem({ profile, toolId, switching, onSwitch }: ProfileIt
       <Button
         size="sm"
         variant="outline"
-        onClick={() => {
-          console.log("Switch button clicked", { toolId, profile });
-          onSwitch(toolId, profile);
-        }}
+        onClick={() => onSwitch(toolId, profile)}
         disabled={switching}
         className="shadow-sm hover:shadow-md transition-all"
       >
@@ -205,7 +202,6 @@ function App() {
     try {
       const key = `profile-order-${toolId}`;
       localStorage.setItem(key, JSON.stringify(order));
-      console.log(`Saved profile order for ${toolId}:`, order);
     } catch (error) {
       console.error("Failed to save profile order:", error);
     }
@@ -328,7 +324,6 @@ function App() {
     loadToolStatus();
     checkNodeEnvironment().then((env: NodeEnvironment) => {
       setNodeEnv(env);
-      console.log("Node environment:", env);
     }).catch((error: unknown) => {
       console.error("Failed to check node environment:", error);
     });
@@ -469,19 +464,16 @@ function App() {
   // 加载统计数据
   const loadStatistics = useCallback(async () => {
     if (!globalConfig?.user_id || !globalConfig?.system_token) {
-      console.log("Skip loading statistics: No global config");
       return;
     }
 
     // 频率限制：5秒内不允许重复请求
     const now = Date.now();
     if (lastFetchTimeRef.current && now - lastFetchTimeRef.current < 5000) {
-      console.log("请求过于频繁，请稍后再试");
       return;
     }
     lastFetchTimeRef.current = now;
 
-    console.log("Loading statistics...");
     try {
       setLoadingStats(true);
 
@@ -496,9 +488,6 @@ function App() {
           return null;
         })
       ]);
-
-      console.log("Stats result:", statsResult);
-      console.log("Quota result:", quotaResult);
 
       if (statsResult) {
         setUsageStats(statsResult);
@@ -544,9 +533,9 @@ function App() {
       return;
     }
 
-    // 验证系统访问令牌格式（最少20个字符）
-    if (trimmedToken.length < 20) {
-      alert("系统访问令牌格式错误，长度不足");
+    // 验证系统访问令牌格式（最少5个字符）
+    if (trimmedToken.length < 5) {
+      alert("系统访问令牌格式错误，长度至少需要5个字符");
       return;
     }
 
@@ -690,10 +679,7 @@ function App() {
   };
 
   const handleConfigureApi = async () => {
-    console.log("handleConfigureApi called", { selectedTool, provider, apiKey: apiKey ? "***" : "empty", baseUrl, profileName });
-
     if (!selectedTool || !apiKey) {
-      console.error("Validation failed:", { selectedTool, hasApiKey: !!apiKey });
       setConfigMessage({ type: 'error', text: "请填写必填项：\n" + (!selectedTool ? "- 请选择工具\n" : "") + (!apiKey ? "- 请输入 API Key" : "") });
 
       // 清除之前的定时器
@@ -709,7 +695,6 @@ function App() {
 
     try {
       setConfiguring(true);
-      console.log("Calling configureApi...");
       await configureApi(
         selectedTool,
         provider,
@@ -717,7 +702,6 @@ function App() {
         provider === "custom" ? baseUrl : undefined,
         profileName || undefined
       );
-      console.log("Configuration successful");
 
       // 设置成功消息
       setConfigMessage({
@@ -759,12 +743,9 @@ function App() {
   };
 
   const handleSwitchProfile = async (toolId: string, profile: string) => {
-    console.log("handleSwitchProfile called", { toolId, profile, currentSwitchingState: switching });
     try {
       setSwitching(true);
-      console.log("Set switching to true");
       await switchProfile(toolId, profile);
-      console.log("switchProfile API call completed");
       setSelectedProfile({ ...selectedProfile, [toolId]: profile });
 
       // 重新加载当前生效的配置
@@ -780,7 +761,6 @@ function App() {
       console.error("Failed to switch profile:", error);
       alert("切换失败: " + error);
     } finally {
-      console.log("Setting switching back to false");
       setSwitching(false);
     }
   };
@@ -1494,7 +1474,7 @@ function App() {
 
       {/* 全局设置对话框 */}
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px]" onPointerDown={(e) => e.stopPropagation()}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <SettingsIcon className="h-5 w-5" />
@@ -1540,6 +1520,7 @@ function App() {
           </div>
           <DialogFooter>
             <Button
+              type="button"
               variant="outline"
               onClick={() => setSettingsOpen(false)}
               disabled={savingSettings}
@@ -1547,7 +1528,12 @@ function App() {
               取消
             </Button>
             <Button
-              onClick={handleSaveSettings}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleSaveSettings();
+              }}
               disabled={savingSettings}
               className="shadow-sm hover:shadow-md transition-all"
             >

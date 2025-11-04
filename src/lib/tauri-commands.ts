@@ -124,7 +124,10 @@ export async function getActiveConfig(tool: string): Promise<ActiveConfig> {
 }
 
 export async function saveGlobalConfig(userId: string, systemToken: string): Promise<void> {
-  return await invoke<void>("save_global_config", { userId, systemToken });
+  return await invoke<void>("save_global_config", {
+    userId: userId,
+    systemToken: systemToken
+  });
 }
 
 export async function getGlobalConfig(): Promise<GlobalConfig | null> {

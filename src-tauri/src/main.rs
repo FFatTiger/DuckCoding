@@ -128,6 +128,8 @@ async fn check_installations() -> Result<Vec<ToolStatus>, String> {
     if let Ok(output) = run_command("claude --version 2>&1") {
         let stdout_str = String::from_utf8_lossy(&output.stdout);
         let stderr_str = String::from_utf8_lossy(&output.stderr);
+
+        #[cfg(debug_assertions)]
         println!("Claude Code detection - status: {}, stdout: {}, stderr: {}", output.status.success(), stdout_str.trim(), stderr_str.trim());
 
         // 只有命令成功执行才认为已安装
@@ -149,6 +151,8 @@ async fn check_installations() -> Result<Vec<ToolStatus>, String> {
     if let Ok(output) = run_command("codex --version 2>&1") {
         let stdout_str = String::from_utf8_lossy(&output.stdout);
         let stderr_str = String::from_utf8_lossy(&output.stderr);
+
+        #[cfg(debug_assertions)]
         println!("CodeX detection - status: {}, stdout: {}, stderr: {}", output.status.success(), stdout_str.trim(), stderr_str.trim());
 
         if output.status.success() {
@@ -168,6 +172,8 @@ async fn check_installations() -> Result<Vec<ToolStatus>, String> {
     if let Ok(output) = run_command("gemini --version 2>&1") {
         let stdout_str = String::from_utf8_lossy(&output.stdout);
         let stderr_str = String::from_utf8_lossy(&output.stderr);
+
+        #[cfg(debug_assertions)]
         println!("Gemini CLI detection - status: {}, stdout: {}, stderr: {}", output.status.success(), stdout_str.trim(), stderr_str.trim());
 
         if output.status.success() {
@@ -189,8 +195,6 @@ async fn check_installations() -> Result<Vec<ToolStatus>, String> {
 // 检测node环境
 #[tauri::command]
 async fn check_node_environment() -> Result<NodeEnvironment, String> {
-    println!("Checking node environment...");
-
     let run_command = |cmd: &str| -> Result<std::process::Output, std::io::Error> {
         #[cfg(target_os = "windows")]
         {
@@ -214,14 +218,11 @@ async fn check_node_environment() -> Result<NodeEnvironment, String> {
     let (node_available, node_version) = if let Ok(output) = run_command("node --version 2>&1") {
         if output.status.success() {
             let version = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            println!("Node detected: {}", version);
             (true, Some(version))
         } else {
-            println!("Node not found");
             (false, None)
         }
     } else {
-        println!("Failed to check node");
         (false, None)
     };
 
@@ -229,14 +230,11 @@ async fn check_node_environment() -> Result<NodeEnvironment, String> {
     let (npm_available, npm_version) = if let Ok(output) = run_command("npm --version 2>&1") {
         if output.status.success() {
             let version = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            println!("npm detected: {}", version);
             (true, Some(version))
         } else {
-            println!("npm not found");
             (false, None)
         }
     } else {
-        println!("Failed to check npm");
         (false, None)
     };
 
@@ -1505,14 +1503,20 @@ fn get_global_config_path() -> Result<PathBuf, String> {
 // Tauri命令：保存全局配置
 #[tauri::command]
 async fn save_global_config(user_id: String, system_token: String) -> Result<(), String> {
+    println!("save_global_config called with user_id: {}", user_id);
+
     let config = GlobalConfig { user_id, system_token };
     let config_path = get_global_config_path()?;
+
+    println!("Config path: {:?}", config_path);
 
     let json = serde_json::to_string_pretty(&config)
         .map_err(|e| format!("Failed to serialize config: {}", e))?;
 
     fs::write(&config_path, json)
         .map_err(|e| format!("Failed to write config: {}", e))?;
+
+    println!("Config saved successfully");
 
     // 设置文件权限为仅所有者可读写（Unix系统）
     #[cfg(unix)]
@@ -2155,43 +2159,123 @@ fn main() {
 
             // 创建系统托盘菜单
             let tray_menu = create_tray_menu(app.handle())?;
-            let app_handle = app.handle().clone();
+            let app_handle2 = app.handle().clone();
 
             let _tray = TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
                 .menu(&tray_menu)
                 .show_menu_on_left_click(false)
                 .on_menu_event(move |app, event| {
+                    println!("Tray menu event: {:?}", event.id);
                     match event.id.as_ref() {
                         "show" => {
+                            println!("Show window requested from tray menu");
                             if let Some(window) = app.get_webview_window("main") {
-                                let _ = window.show();
-                                let _ = window.set_focus();
+                                println!("Window is_visible: {:?}", window.is_visible());
+                                println!("Window is_minimized: {:?}", window.is_minimized());
+
+                                // 显示并激活窗口
+                                if let Err(e) = window.show() {
+                                    println!("Error showing window: {:?}", e);
+                                }
+                                if let Err(e) = window.unminimize() {
+                                    println!("Error unminimizing window: {:?}", e);
+                                }
+                                if let Err(e) = window.set_focus() {
+                                    println!("Error setting focus: {:?}", e);
+                                }
+
+                                // macOS: 强制激活应用到前台
+                                #[cfg(target_os = "macos")]
+                                {
+                                    use cocoa::appkit::NSApplication;
+                                    use cocoa::base::nil;
+                                    use objc::runtime::YES;
+
+                                    unsafe {
+                                        let ns_app = NSApplication::sharedApplication(nil);
+                                        ns_app.activateIgnoringOtherApps_(YES);
+                                    }
+                                    println!("macOS app activated");
+                                }
+
+                                println!("After show - is_visible: {:?}", window.is_visible());
+                            } else {
+                                println!("Window not found!");
                             }
                         }
                         "quit" => {
+                            println!("Quit requested from tray menu");
                             app.exit(0);
                         }
                         _ => {}
                     }
                 })
                 .on_tray_icon_event(move |_tray, event| {
+                    println!("Tray icon event received: {:?}", event);
                     match event {
                         TrayIconEvent::Click {
                             button: MouseButton::Left,
                             button_state: MouseButtonState::Up,
                             ..
                         } => {
+                            println!("Tray icon LEFT click detected");
                             // 单击左键显示主窗口
-                            if let Some(window) = app_handle.get_webview_window("main") {
-                                let _ = window.show();
-                                let _ = window.set_focus();
+                            if let Some(window) = app_handle2.get_webview_window("main") {
+                                println!("Window found, is_visible: {:?}", window.is_visible());
+                                println!("Window is_minimized: {:?}", window.is_minimized());
+
+                                // 显示并激活窗口
+                                if let Err(e) = window.show() {
+                                    println!("Error showing window: {:?}", e);
+                                }
+                                if let Err(e) = window.unminimize() {
+                                    println!("Error unminimizing window: {:?}", e);
+                                }
+                                if let Err(e) = window.set_focus() {
+                                    println!("Error setting focus: {:?}", e);
+                                }
+
+                                // macOS: 强制激活应用到前台
+                                #[cfg(target_os = "macos")]
+                                {
+                                    use cocoa::appkit::NSApplication;
+                                    use cocoa::base::nil;
+                                    use objc::runtime::YES;
+
+                                    unsafe {
+                                        let ns_app = NSApplication::sharedApplication(nil);
+                                        ns_app.activateIgnoringOtherApps_(YES);
+                                    }
+                                    println!("macOS app activated");
+                                }
+
+                                println!("After show - is_visible: {:?}", window.is_visible());
+                            } else {
+                                println!("Window not found from tray click!");
                             }
                         }
-                        _ => {}
+                        _ => {
+                            // 不打印太多日志
+                        }
                     }
                 })
                 .build(app)?;
+
+            // 处理窗口关闭事件 - 最小化到托盘而不是退出
+            if let Some(window) = app.get_webview_window("main") {
+                let window_clone = window.clone();
+                window.on_window_event(move |event| {
+                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                        println!("Window close requested - hiding to tray");
+                        // 阻止默认关闭行为
+                        api.prevent_close();
+                        // 隐藏窗口到托盘
+                        let _ = window_clone.hide();
+                        println!("Window hidden");
+                    }
+                });
+            }
 
             Ok(())
         })
