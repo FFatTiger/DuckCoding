@@ -38,9 +38,3 @@ objc = "0.2"
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
 cli = ["clap", "inquire", "console", "colored", "indicatif"]
-
-# 定义 CLI 二进制
-[[bin]]
-name = "duckcoding-cli"
-path = "src/bin/cli.rs"
-required-features = ["cli"]
