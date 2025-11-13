@@ -699,7 +699,6 @@ struct ActiveConfig {
     profile_name: Option<String>, // 当前配置的名称
 }
 
-
 // 全局配置辅助函数
 fn get_global_config_path() -> Result<PathBuf, String> {
     let home_dir = dirs::home_dir().ok_or("Failed to get home directory")?;
@@ -1730,8 +1729,8 @@ fn main() {
                 }
             }
 
-             // 设置工作目录到项目根目录（跨平台支持）
-             if let Ok(resource_dir) = app.path().resource_dir() {
+            // 设置工作目录到项目根目录（跨平台支持）
+            if let Ok(resource_dir) = app.path().resource_dir() {
                 println!("Resource dir: {:?}", resource_dir);
 
                 if cfg!(debug_assertions) {
@@ -1936,8 +1935,8 @@ fn apply_proxy_now() -> Result<Option<String>, String> {
     }
     let content = std::fs::read_to_string(&config_path)
         .map_err(|e| format!("Failed to read config: {}", e))?;
-    let cfg: GlobalConfig = serde_json::from_str(&content)
-        .map_err(|e| format!("Failed to parse config: {}", e))?;
+    let cfg: GlobalConfig =
+        serde_json::from_str(&content).map_err(|e| format!("Failed to parse config: {}", e))?;
 
     duckcoding::ProxyService::apply_proxy_from_config(&cfg);
     Ok(duckcoding::ProxyService::get_current_proxy())
@@ -1976,4 +1975,3 @@ async fn test_proxy_request() -> Result<TestProxyResult, String> {
         }),
     }
 }
-
