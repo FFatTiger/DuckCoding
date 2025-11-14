@@ -108,21 +108,27 @@ export function useDashboard(initialTools: ToolStatus[]) {
 
   // 更新tools数据（用于外部同步）
   // 智能合并：保留现有的更新检测字段，避免被外部状态覆盖
+  // 但如果版本号变化，说明已更新，使用新数据
   const updateTools = useCallback((newTools: ToolStatus[]) => {
     setTools((prevTools) => {
       const mergedTools = newTools.map((newTool) => {
         const existingTool = prevTools.find((t) => t.id === newTool.id);
 
-        // 如果找到现有工具，合并状态并保留更新检测字段
         if (existingTool) {
-          return {
-            ...newTool,
-            // 保留检查更新后设置的字段
-            hasUpdate: existingTool.hasUpdate,
-            latestVersion: existingTool.latestVersion,
-            mirrorVersion: existingTool.mirrorVersion,
-            mirrorIsStale: existingTool.mirrorIsStale,
-          };
+          // 版本号相同：保留更新检测字段（避免外部状态覆盖检查更新的结果）
+          if (existingTool.version === newTool.version) {
+            return {
+              ...newTool,
+              // 保留检查更新后设置的字段
+              hasUpdate: existingTool.hasUpdate,
+              latestVersion: existingTool.latestVersion,
+              mirrorVersion: existingTool.mirrorVersion,
+              mirrorIsStale: existingTool.mirrorIsStale,
+            };
+          }
+
+          // 版本号不同：工具已更新，使用新数据（清除更新状态）
+          return newTool;
         }
 
         // 新工具直接使用
