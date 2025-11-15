@@ -103,6 +103,11 @@ mod tests {
             proxy_port: Some("7890".to_string()),
             proxy_username: None,
             proxy_password: None,
+            transparent_proxy_enabled: false,
+            transparent_proxy_port: 8787,
+            transparent_proxy_api_key: None,
+            transparent_proxy_real_api_key: None,
+            transparent_proxy_real_base_url: None,
         };
 
         let url = ProxyService::build_proxy_url(&config);
@@ -120,6 +125,11 @@ mod tests {
             proxy_port: Some("8080".to_string()),
             proxy_username: Some("user".to_string()),
             proxy_password: Some("pass".to_string()),
+            transparent_proxy_enabled: false,
+            transparent_proxy_port: 8787,
+            transparent_proxy_api_key: None,
+            transparent_proxy_real_api_key: None,
+            transparent_proxy_real_base_url: None,
         };
 
         let url = ProxyService::build_proxy_url(&config);
@@ -140,6 +150,11 @@ mod tests {
             proxy_port: Some("1080".to_string()),
             proxy_username: None,
             proxy_password: None,
+            transparent_proxy_enabled: false,
+            transparent_proxy_port: 8787,
+            transparent_proxy_api_key: None,
+            transparent_proxy_real_api_key: None,
+            transparent_proxy_real_base_url: None,
         };
 
         let url = ProxyService::build_proxy_url(&config);

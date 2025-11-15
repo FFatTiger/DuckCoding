@@ -11,6 +11,8 @@ pub use models::InstallMethod; // InstallMethod is defined in models (tool.rs) â
 pub use services::config::ConfigService;
 pub use services::installer::InstallerService;
 pub use services::proxy::ProxyService;
+pub use services::transparent_proxy::{ProxyConfig, TransparentProxyService};
+pub use services::transparent_proxy_config::TransparentProxyConfigService;
 pub use services::version::VersionService;
 
 pub use utils::*;
