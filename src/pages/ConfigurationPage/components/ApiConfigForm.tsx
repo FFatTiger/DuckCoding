@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Info, Loader2, Save, Sparkles } from 'lucide-react';
+import { Loader2, Save, Sparkles } from 'lucide-react';
 import { logoMap } from '@/utils/constants';
 import type { ToolStatus } from '@/lib/tauri-commands';
 
@@ -101,46 +101,35 @@ export function ApiConfigForm({
                 onChange={(e) => setApiKey(e.target.value)}
                 className="shadow-sm flex-1"
               />
-              <Button
-                onClick={onGenerateKey}
-                disabled={generatingKey || !selectedTool}
-                variant="outline"
-                className="shadow-sm hover:shadow-md transition-all"
-                title="一键生成 DuckCoding API Key"
-              >
-                {generatingKey ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    生成中...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    一键生成
-                  </>
-                )}
-              </Button>
+              {provider === 'duckcoding' && (
+                <Button
+                  onClick={onGenerateKey}
+                  disabled={generatingKey || !selectedTool}
+                  variant="outline"
+                  className="shadow-sm hover:shadow-md transition-all"
+                  title="一键生成 DuckCoding API Key"
+                >
+                  {generatingKey ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      生成中...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      一键生成
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
-            <p className="text-xs text-muted-foreground">
-              点击"一键生成"可自动创建 DuckCoding API Key（需先配置全局设置）
-            </p>
+            {provider === 'duckcoding' && (
+              <p className="text-xs text-muted-foreground">
+                点击"一键生成"可自动创建 DuckCoding API Key（需先配置全局设置）
+              </p>
+            )}
           </div>
 
-          {provider === 'duckcoding' && (
-            <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-4">
-              <div className="flex items-start gap-2 mb-3">
-                <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                <div className="space-y-2 flex-1">
-                  <p className="text-xs font-semibold text-blue-800 dark:text-blue-200">
-                    点击"改用 npm 安装"将自动切换为 npm 方式并重新安装
-                  </p>
-                  <p className="text-xs text-blue-700 dark:text-blue-300">
-                    npm 安装会直接从 npm 仓库获取最新版本
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
 
           {provider === 'custom' && (
             <div className="space-y-2">

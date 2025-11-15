@@ -1,14 +1,12 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   configureApi,
-  getActiveConfig,
-  listProfiles,
   generateApiKeyForTool,
   getGlobalConfig,
   type ToolStatus,
-  type ActiveConfig,
   type GlobalConfig,
 } from '@/lib/tauri-commands';
+import { useProfileLoader } from '@/hooks/useProfileLoader';
 
 export function useConfigManagement(tools: ToolStatus[]) {
   const [selectedTool, setSelectedTool] = useState<string>('');
@@ -18,9 +16,10 @@ export function useConfigManagement(tools: ToolStatus[]) {
   const [profileName, setProfileName] = useState<string>('');
   const [configuring, setConfiguring] = useState(false);
   const [generatingKey, setGeneratingKey] = useState(false);
-  const [activeConfigs, setActiveConfigs] = useState<Record<string, ActiveConfig>>({});
-  const [profiles, setProfiles] = useState<Record<string, string[]>>({});
   const [globalConfig, setGlobalConfig] = useState<GlobalConfig | null>(null);
+
+  // 使用共享配置加载 Hook
+  const { profiles, activeConfigs, loadAllProfiles } = useProfileLoader(tools);
 
   // 加载全局配置
   useEffect(() => {
@@ -36,34 +35,6 @@ export function useConfigManagement(tools: ToolStatus[]) {
     loadConfig();
   }, []);
 
-  // 加载所有配置文件和当前激活配置
-  const loadAllProfiles = useCallback(async () => {
-    const installedTools = tools.filter((t) => t.installed);
-    const profileData: Record<string, string[]> = {};
-    const configData: Record<string, ActiveConfig> = {};
-
-    for (const tool of installedTools) {
-      try {
-        const toolProfiles = await listProfiles(tool.id);
-        profileData[tool.id] = toolProfiles;
-      } catch (error) {
-        console.error('Failed to load profiles for ' + tool.id, error);
-        profileData[tool.id] = [];
-      }
-
-      try {
-        const activeConfig = await getActiveConfig(tool.id);
-        configData[tool.id] = activeConfig;
-      } catch (error) {
-        console.error('Failed to load active config for ' + tool.id, error);
-        configData[tool.id] = { api_key: '未配置', base_url: '未配置' };
-      }
-    }
-
-    setProfiles(profileData);
-    setActiveConfigs(configData);
-  }, [tools]);
-
   // 当工具加载完成后，设置默认选中的工具并加载配置
   useEffect(() => {
     const installedTools = tools.filter((t) => t.installed);
@@ -73,7 +44,10 @@ export function useConfigManagement(tools: ToolStatus[]) {
     if (installedTools.length > 0) {
       loadAllProfiles();
     }
-  }, [tools, selectedTool, loadAllProfiles]);
+    // 移除 loadAllProfiles 依赖，避免循环依赖
+    // loadAllProfiles 已经正确依赖了 tools，无需重复添加
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tools, selectedTool]);
 
   // 生成 API Key
   const handleGenerateApiKey = async (): Promise<{ success: boolean; message: string }> => {
@@ -102,7 +76,7 @@ export function useConfigManagement(tools: ToolStatus[]) {
     }
   };
 
-  // 配置 API
+  // 检查是否会覆盖现有配置
   const handleConfigureApi = async (): Promise<{
     success: boolean;
     message: string;
@@ -122,13 +96,9 @@ export function useConfigManagement(tools: ToolStatus[]) {
     // 确保拥有最新的配置数据
     let currentConfig = activeConfigs[selectedTool];
     if (!currentConfig) {
-      try {
-        const latestConfig = await getActiveConfig(selectedTool);
-        setActiveConfigs((prev) => ({ ...prev, [selectedTool]: latestConfig }));
-        currentConfig = latestConfig;
-      } catch (error) {
-        console.error('Failed to fetch active config before saving:', error);
-      }
+      // 重新加载以获取最新配置
+      await loadAllProfiles();
+      currentConfig = activeConfigs[selectedTool];
     }
 
     // 检查是否会覆盖现有配置

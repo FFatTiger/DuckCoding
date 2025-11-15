@@ -130,41 +130,43 @@ export function ConfigurationPage({ tools: toolsProp, loading: loadingProp }: Co
       ) : installedTools.length > 0 ? (
         <div className="grid gap-4">
           {/* 重要提示 */}
-          <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950 rounded-lg border border-amber-200 dark:border-amber-800">
-            <div className="flex items-start gap-2 mb-3">
-              <Info className="h-4 w-4 flex-shrink-0 mt-0.5" />
-              <div className="space-y-2">
-                <h4 className="font-semibold text-amber-900 dark:text-amber-100">重要提示</h4>
-                <div className="text-sm text-amber-800 dark:text-amber-200 space-y-2">
-                  <div>
-                    <p className="font-semibold mb-1">DuckCoding API Key 分组:</p>
-                    <ul className="list-disc list-inside space-y-1 ml-2">
-                      {selectedTool && groupNameMap[selectedTool] && (
-                        <li>
-                          当前工具需要使用{' '}
-                          <span className="font-mono bg-amber-100 dark:bg-amber-900 px-1.5 py-0.5 rounded">
+          {provider === 'duckcoding' && (
+            <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950 rounded-lg border border-amber-200 dark:border-amber-800">
+              <div className="flex items-start gap-2 mb-3">
+                <Info className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-amber-900 dark:text-amber-100">重要提示</h4>
+                  <div className="text-sm text-amber-800 dark:text-amber-200 space-y-2">
+                    <div>
+                      <p className="font-semibold mb-1">DuckCoding API Key 分组:</p>
+                      <ul className="list-disc list-inside space-y-1 ml-2">
+                        {selectedTool && groupNameMap[selectedTool] && (
+                          <li>
+                            当前工具需要使用{' '}
+                            <span className="font-mono bg-amber-100 dark:bg-amber-900 px-1.5 py-0.5 rounded">
                             {groupNameMap[selectedTool]}
                           </span>{' '}
-                          的 API Key
-                        </li>
-                      )}
-                      <li>每个工具必须使用其专用分组的 API Key</li>
-                      <li>API Key 不能混用</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <p className="font-semibold mb-1">获取 API Key:</p>
-                    <button
-                      onClick={() => openExternalLink('https://duckcoding.com/console/token')}
-                      className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-300 hover:underline font-medium cursor-pointer bg-transparent border-0 p-0"
-                    >
-                      访问 DuckCoding 控制台 <ExternalLink className="h-3 w-3" />
-                    </button>
+                            的 API Key
+                          </li>
+                        )}
+                        <li>每个工具必须使用其专用分组的 API Key</li>
+                        <li>API Key 不能混用</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="font-semibold mb-1">获取 API Key:</p>
+                      <button
+                        onClick={() => openExternalLink('https://duckcoding.com/console/token')}
+                        className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-300 hover:underline font-medium cursor-pointer bg-transparent border-0 p-0"
+                      >
+                        访问 DuckCoding 控制台 <ExternalLink className="h-3 w-3" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* API 配置表单 */}
           <ApiConfigForm

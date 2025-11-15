@@ -74,7 +74,11 @@ export function ProfileSwitchPage({ tools: toolsProp, loading: loadingProp }: Pr
         setSelectedSwitchTab(installedTools[0].id);
       }
     }
-  }, [tools, loadAllProfiles, selectedSwitchTab]);
+    // 移除 loadAllProfiles 和 selectedSwitchTab 依赖，避免循环依赖
+    // loadAllProfiles 已经正确依赖了 tools，无需重复添加
+    // selectedSwitchTab 的设置只需在初始化时执行一次
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tools]);
 
   // 切换配置处理
   const onSwitchProfile = async (toolId: string, profile: string) => {

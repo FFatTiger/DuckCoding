@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
 import {
-  listProfiles,
   switchProfile,
   deleteProfile,
   getActiveConfig,
@@ -9,23 +8,27 @@ import {
   stopTransparentProxy,
   getTransparentProxyStatus,
   type ToolStatus,
-  type ActiveConfig,
   type GlobalConfig,
   type TransparentProxyStatus,
 } from '@/lib/tauri-commands';
+import { useProfileLoader } from '@/hooks/useProfileLoader';
 
 export function useProfileManagement(tools: ToolStatus[], applySavedOrder: (toolId: string, profiles: string[]) => string[]) {
   const [switching, setSwitching] = useState(false);
   const [deletingProfiles, setDeletingProfiles] = useState<Record<string, boolean>>({});
   const [selectedProfile, setSelectedProfile] = useState<Record<string, string>>({});
-  const [profiles, setProfiles] = useState<Record<string, string[]>>({});
-  const [activeConfigs, setActiveConfigs] = useState<Record<string, ActiveConfig>>({});
   const [globalConfig, setGlobalConfig] = useState<GlobalConfig | null>(null);
   const [transparentProxyStatus, setTransparentProxyStatus] = useState<TransparentProxyStatus | null>(
     null,
   );
   const [startingProxy, setStartingProxy] = useState(false);
   const [stoppingProxy, setStoppingProxy] = useState(false);
+
+  // 使用共享配置加载 Hook，传入排序转换函数
+  const { profiles, setProfiles, activeConfigs, setActiveConfigs, loadAllProfiles } = useProfileLoader(
+    tools,
+    applySavedOrder
+  );
 
   // 加载全局配置
   const loadGlobalConfig = useCallback(async () => {
@@ -46,34 +49,6 @@ export function useProfileManagement(tools: ToolStatus[], applySavedOrder: (tool
       console.error('Failed to load transparent proxy status:', error);
     }
   }, []);
-
-  // 加载所有配置文件和当前激活配置
-  const loadAllProfiles = useCallback(async () => {
-    const installedTools = tools.filter((t) => t.installed);
-    const profileData: Record<string, string[]> = {};
-    const configData: Record<string, ActiveConfig> = {};
-
-    for (const tool of installedTools) {
-      try {
-        const toolProfiles = await listProfiles(tool.id);
-        profileData[tool.id] = applySavedOrder(tool.id, toolProfiles);
-      } catch (error) {
-        console.error('Failed to load profiles for ' + tool.id, error);
-        profileData[tool.id] = [];
-      }
-
-      try {
-        const activeConfig = await getActiveConfig(tool.id);
-        configData[tool.id] = activeConfig;
-      } catch (error) {
-        console.error('Failed to load active config for ' + tool.id, error);
-        configData[tool.id] = { api_key: '未配置', base_url: '未配置' };
-      }
-    }
-
-    setProfiles(profileData);
-    setActiveConfigs(configData);
-  }, [tools, applySavedOrder]);
 
   // 切换配置
   const handleSwitchProfile = useCallback(
@@ -136,7 +111,7 @@ export function useProfileManagement(tools: ToolStatus[], applySavedOrder: (tool
         setSwitching(false);
       }
     },
-    [globalConfig, transparentProxyStatus, loadGlobalConfig],
+    [globalConfig, transparentProxyStatus, loadGlobalConfig, setActiveConfigs],
   );
 
   // 删除配置
@@ -209,7 +184,7 @@ export function useProfileManagement(tools: ToolStatus[], applySavedOrder: (tool
         });
       }
     },
-    [profiles, activeConfigs, loadAllProfiles],
+    [profiles, activeConfigs, loadAllProfiles, setProfiles, setActiveConfigs],
   );
 
   // 启动透明代理
@@ -271,7 +246,7 @@ export function useProfileManagement(tools: ToolStatus[], applySavedOrder: (tool
     } finally {
       setStoppingProxy(false);
     }
-  }, []);
+  }, [setActiveConfigs]);
 
   return {
     // State
