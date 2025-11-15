@@ -10,6 +10,9 @@ use std::time::Instant;
 use tokio::fs;
 use tokio::sync::{Mutex, RwLock};
 
+#[cfg(target_os = "linux")]
+use std::os::unix::fs::PermissionsExt;
+
 /// 更新管理服务
 #[derive(Clone)]
 pub struct UpdateService {
