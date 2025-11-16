@@ -28,5 +28,11 @@ ditto "$APP_PATH" "$STAGING_DIR/$APP_NAME"
 # Add Applications symlink for drag-and-drop installs
 ln -s /Applications "$STAGING_DIR/Applications"
 
+hdiutil detach "/Volumes/$VOL_NAME" >/dev/null 2>&1 || true
+
+if [[ -f "$DMG_PATH" ]]; then
+  rm -f "$DMG_PATH"
+fi
+
 hdiutil create -volname "$VOL_NAME" -fs HFS+ -srcfolder "$STAGING_DIR" -ov -format UDZO "$DMG_PATH"
 echo "DMG created."
