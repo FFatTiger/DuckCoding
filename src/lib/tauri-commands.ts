@@ -52,6 +52,10 @@ export interface GlobalConfig {
   // 保存真实的 API 配置
   transparent_proxy_real_api_key?: string;
   transparent_proxy_real_base_url?: string;
+  // 多工具透明代理配置（新架构）
+  proxy_configs?: {
+    [toolId: string]: ToolProxyConfig;
+  };
 }
 
 export interface GenerateApiKeyResult {
@@ -330,10 +334,27 @@ export async function getGeminiSchema(): Promise<JsonSchema> {
 }
 
 // 透明代理相关接口和函数
+
+// 单个工具的代理配置
+export interface ToolProxyConfig {
+  enabled: boolean;
+  port: number;
+  local_api_key: string | null;
+  real_api_key: string | null;
+  real_base_url: string | null;
+  real_model_provider: string | null; // Codex 专用：备份的 model_provider
+  allow_public: boolean;
+}
+
 export interface TransparentProxyStatus {
   running: boolean;
   port: number;
 }
+
+// 多工具代理状态映射
+export type AllProxyStatus = {
+  [toolId: string]: TransparentProxyStatus;
+};
 
 export async function startTransparentProxy(): Promise<string> {
   return await invoke<string>('start_transparent_proxy');
@@ -355,6 +376,32 @@ export async function updateTransparentProxyConfig(
     newApiKey,
     newBaseUrl,
   });
+}
+
+// ==================== 多工具透明代理 API（新架构） ====================
+
+/**
+ * 启动指定工具的透明代理
+ * @param toolId - 工具 ID ("claude-code", "codex", "gemini-cli")
+ */
+export async function startToolProxy(toolId: string): Promise<string> {
+  return await invoke<string>('start_tool_proxy', { toolId });
+}
+
+/**
+ * 停止指定工具的透明代理
+ * @param toolId - 工具 ID ("claude-code", "codex", "gemini-cli")
+ */
+export async function stopToolProxy(toolId: string): Promise<string> {
+  return await invoke<string>('stop_tool_proxy', { toolId });
+}
+
+/**
+ * 获取所有工具的透明代理状态
+ * @returns 工具 ID 到状态的映射
+ */
+export async function getAllProxyStatus(): Promise<AllProxyStatus> {
+  return await invoke<AllProxyStatus>('get_all_proxy_status');
 }
 
 // 更新管理相关函数

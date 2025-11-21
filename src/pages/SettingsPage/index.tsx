@@ -5,10 +5,9 @@ import { Loader2, Save } from 'lucide-react';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { useToast } from '@/hooks/use-toast';
 import { useSettingsForm } from './hooks/useSettingsForm';
-import { useTransparentProxy } from './hooks/useTransparentProxy';
 import { BasicSettingsTab } from './components/BasicSettingsTab';
 import { ProxySettingsTab } from './components/ProxySettingsTab';
-import { ExperimentalSettingsTab } from './components/ExperimentalSettingsTab';
+import { MultiToolProxySettings } from './components/MultiToolProxySettings';
 import { AboutTab } from './components/AboutTab';
 import type { GlobalConfig, UpdateInfo } from '@/lib/tauri-commands';
 
@@ -51,36 +50,11 @@ export function SettingsPage({
     setProxyTestUrl,
     proxyBypassUrls,
     setProxyBypassUrls,
-    transparentProxyEnabled,
-    setTransparentProxyEnabled,
-    transparentProxyPort,
-    setTransparentProxyPort,
-    transparentProxyApiKey,
-    setTransparentProxyApiKey,
-    transparentProxyAllowPublic,
-    setTransparentProxyAllowPublic,
     savingSettings,
     testingProxy,
     saveSettings,
-    generateProxyKey,
     testProxy,
   } = useSettingsForm({ initialConfig: globalConfig, onConfigChange });
-
-  const {
-    transparentProxyStatus,
-    startingProxy,
-    stoppingProxy,
-    loadTransparentProxyStatus,
-    handleStartProxy,
-    handleStopProxy,
-  } = useTransparentProxy();
-
-  // 初始加载透明代理状态
-  useEffect(() => {
-    loadTransparentProxyStatus().catch((error) => {
-      console.error('Failed to load transparent proxy status:', error);
-    });
-  }, [loadTransparentProxyStatus]);
 
   // 监听来自App组件的导航到关于tab的事件
   useEffect(() => {
@@ -134,42 +108,6 @@ export function SettingsPage({
     }
   };
 
-  // 启动透明代理
-  const handleStartTransparentProxy = async () => {
-    try {
-      const result = await handleStartProxy();
-      toast({
-        title: '启动成功',
-        description: result,
-      });
-    } catch (error) {
-      console.error('Failed to start transparent proxy:', error);
-      toast({
-        title: '启动失败',
-        description: String(error),
-        variant: 'destructive',
-      });
-    }
-  };
-
-  // 停止透明代理
-  const handleStopTransparentProxy = async () => {
-    try {
-      const result = await handleStopProxy();
-      toast({
-        title: '停止成功',
-        description: result,
-      });
-    } catch (error) {
-      console.error('Failed to stop transparent proxy:', error);
-      toast({
-        title: '停止失败',
-        description: String(error),
-        variant: 'destructive',
-      });
-    }
-  };
-
   return (
     <PageContainer>
       <div className="mb-6">
@@ -181,7 +119,7 @@ export function SettingsPage({
         <TabsList>
           <TabsTrigger value="basic">基本设置</TabsTrigger>
           <TabsTrigger value="proxy">代理设置</TabsTrigger>
-          <TabsTrigger value="experimental">实验性功能</TabsTrigger>
+          <TabsTrigger value="experimental">透明代理</TabsTrigger>
           <TabsTrigger value="about">关于</TabsTrigger>
         </TabsList>
 
@@ -219,24 +157,9 @@ export function SettingsPage({
           />
         </TabsContent>
 
-        {/* 实验性功能 */}
+        {/* 透明代理 (多工具) */}
         <TabsContent value="experimental" className="space-y-6">
-          <ExperimentalSettingsTab
-            transparentProxyEnabled={transparentProxyEnabled}
-            setTransparentProxyEnabled={setTransparentProxyEnabled}
-            transparentProxyPort={transparentProxyPort}
-            setTransparentProxyPort={setTransparentProxyPort}
-            transparentProxyApiKey={transparentProxyApiKey}
-            setTransparentProxyApiKey={setTransparentProxyApiKey}
-            transparentProxyAllowPublic={transparentProxyAllowPublic}
-            setTransparentProxyAllowPublic={setTransparentProxyAllowPublic}
-            transparentProxyStatus={transparentProxyStatus}
-            startingProxy={startingProxy}
-            stoppingProxy={stoppingProxy}
-            onGenerateProxyKey={generateProxyKey}
-            onStartProxy={handleStartTransparentProxy}
-            onStopProxy={handleStopTransparentProxy}
-          />
+          <MultiToolProxySettings />
         </TabsContent>
 
         {/* 关于 */}
@@ -245,8 +168,8 @@ export function SettingsPage({
         </TabsContent>
       </Tabs>
 
-      {/* 保存按钮 - 仅在非关于标签页时显示 */}
-      {activeTab !== 'about' && (
+      {/* 保存按钮 - 仅在基本设置和代理设置时显示 */}
+      {(activeTab === 'basic' || activeTab === 'proxy') && (
         <div className="flex justify-end mt-6">
           <Button
             onClick={handleSaveSettings}
