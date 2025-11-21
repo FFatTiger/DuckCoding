@@ -15,21 +15,24 @@ export function ActiveConfigCard({
   globalConfig,
   transparentProxyEnabled,
 }: ActiveConfigCardProps) {
-  const isClaudeCodeWithProxy = toolId === 'claude-code' && transparentProxyEnabled;
-  const hasProxyConfigMissing =
-    !globalConfig?.transparent_proxy_real_api_key || !globalConfig?.transparent_proxy_real_base_url;
+  // 从新的 proxy_configs 中获取当前工具的代理配置
+  const toolProxyConfig = globalConfig?.proxy_configs?.[toolId];
+  const realApiKey = toolProxyConfig?.real_api_key;
+  const realBaseUrl = toolProxyConfig?.real_base_url;
+
+  const hasProxyConfigMissing = transparentProxyEnabled && (!realApiKey || !realBaseUrl);
 
   return (
     <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950 rounded-lg border border-blue-200 dark:border-blue-800">
       <div className="flex items-center gap-2 mb-3">
         <Key className="h-5 w-5 text-blue-600 dark:text-blue-400" />
         <h4 className="font-semibold text-blue-900 dark:text-blue-100">
-          {isClaudeCodeWithProxy ? '透明代理配置' : '当前生效配置'}
+          {transparentProxyEnabled ? '透明代理配置' : '当前生效配置'}
         </h4>
       </div>
       <div className="space-y-2 text-sm">
         {/* 透明代理配置显示 */}
-        {isClaudeCodeWithProxy ? (
+        {transparentProxyEnabled ? (
           <>
             {/* 配置缺失警告 */}
             {hasProxyConfigMissing && (
@@ -54,17 +57,13 @@ export function ActiveConfigCard({
             <ConfigField label="配置名称:" value="透明代理配置" highlight />
             <ConfigField
               label="API Key:"
-              value={
-                globalConfig?.transparent_proxy_real_api_key
-                  ? maskApiKey(globalConfig.transparent_proxy_real_api_key)
-                  : '⚠️ 未配置'
-              }
-              isError={!globalConfig?.transparent_proxy_real_api_key}
+              value={realApiKey ? maskApiKey(realApiKey) : '⚠️ 未配置'}
+              isError={!realApiKey}
             />
             <ConfigField
               label="Base URL:"
-              value={globalConfig?.transparent_proxy_real_base_url || '⚠️ 未配置'}
-              isError={!globalConfig?.transparent_proxy_real_base_url}
+              value={realBaseUrl || '⚠️ 未配置'}
+              isError={!realBaseUrl}
             />
           </>
         ) : (

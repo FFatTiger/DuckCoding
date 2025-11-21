@@ -49,16 +49,16 @@ export function ProfileSwitchPage({
     setProfiles,
     activeConfigs,
     globalConfig,
-    transparentProxyStatus,
-    startingProxy,
-    stoppingProxy,
     loadGlobalConfig,
-    loadTransparentProxyStatus,
+    loadAllProxyStatus,
     loadAllProfiles,
     handleSwitchProfile,
     handleDeleteProfile,
-    handleStartTransparentProxy,
-    handleStopTransparentProxy,
+    handleStartToolProxy,
+    handleStopToolProxy,
+    isToolProxyEnabled,
+    isToolProxyRunning,
+    isToolLoading,
   } = useProfileManagement(tools, applySavedOrder);
 
   // 同步外部 tools 数据
@@ -70,8 +70,8 @@ export function ProfileSwitchPage({
   // 初始加载
   useEffect(() => {
     loadGlobalConfig();
-    loadTransparentProxyStatus();
-  }, [loadGlobalConfig, loadTransparentProxyStatus]);
+    loadAllProxyStatus();
+  }, [loadGlobalConfig, loadAllProxyStatus]);
 
   // 当工具加载完成后，加载配置
   useEffect(() => {
@@ -128,8 +128,8 @@ export function ProfileSwitchPage({
   };
 
   // 启动透明代理处理
-  const onStartTransparentProxy = async () => {
-    const result = await handleStartTransparentProxy();
+  const onStartToolProxy = async (toolId: string) => {
+    const result = await handleStartToolProxy(toolId);
     toast({
       title: result.success ? '启动成功' : '启动失败',
       description: result.message,
@@ -138,8 +138,8 @@ export function ProfileSwitchPage({
   };
 
   // 停止透明代理处理
-  const onStopTransparentProxy = async () => {
-    const result = await handleStopTransparentProxy();
+  const onStopToolProxy = async (toolId: string) => {
+    const result = await handleStopToolProxy(toolId);
     toast({
       title: result.success ? '停止成功' : '停止失败',
       description: result.message,
@@ -158,8 +158,17 @@ export function ProfileSwitchPage({
   };
 
   const installedTools = tools.filter((t) => t.installed);
-  const effectiveTransparentEnabled = Boolean(globalConfig?.transparent_proxy_enabled);
-  const shouldShowRestartForAllTools = !effectiveTransparentEnabled;
+
+  // 获取当前选中工具的代理状态
+  const currentToolProxyEnabled = isToolProxyEnabled(selectedSwitchTab);
+  const currentToolProxyRunning = isToolProxyRunning(selectedSwitchTab);
+  const currentToolLoading = isToolLoading(selectedSwitchTab);
+
+  // 获取当前选中工具的名称
+  const getCurrentToolName = () => {
+    const tool = installedTools.find((t) => t.id === selectedSwitchTab);
+    return tool?.name || selectedSwitchTab;
+  };
 
   return (
     <PageContainer>
@@ -175,23 +184,23 @@ export function ProfileSwitchPage({
         </div>
       ) : (
         <>
-          {/* 透明代理状态显示 - 仅在ClaudeCode选项卡显示 */}
-          {selectedSwitchTab === 'claude-code' && (
+          {/* 透明代理状态显示 - 为所有工具显示 */}
+          {selectedSwitchTab && (
             <ProxyStatusBanner
-              isEnabled={effectiveTransparentEnabled}
-              isRunning={transparentProxyStatus?.running || false}
-              startingProxy={startingProxy}
-              stoppingProxy={stoppingProxy}
-              onStartProxy={onStartTransparentProxy}
-              onStopProxy={onStopTransparentProxy}
+              toolId={selectedSwitchTab}
+              toolName={getCurrentToolName()}
+              isEnabled={currentToolProxyEnabled}
+              isRunning={currentToolProxyRunning}
+              startingProxy={currentToolLoading && !currentToolProxyRunning}
+              stoppingProxy={currentToolLoading && currentToolProxyRunning}
+              onStartProxy={() => onStartToolProxy(selectedSwitchTab)}
+              onStopProxy={() => onStopToolProxy(selectedSwitchTab)}
               onNavigateToSettings={switchToSettings}
             />
           )}
 
-          {/* 重启提示（在所有工具显示） */}
-          <RestartWarningBanner
-            show={shouldShowRestartForAllTools || selectedSwitchTab != 'claude-code'}
-          />
+          {/* 重启提示（在未启用透明代理时显示） */}
+          <RestartWarningBanner show={!currentToolProxyEnabled || !currentToolProxyRunning} />
 
           {installedTools.length > 0 ? (
             <Tabs value={selectedSwitchTab} onValueChange={setSelectedSwitchTab}>
@@ -207,6 +216,7 @@ export function ProfileSwitchPage({
               {installedTools.map((tool) => {
                 const toolProfiles = profiles[tool.id] || [];
                 const activeConfig = activeConfigs[tool.id];
+                const toolProxyEnabled = isToolProxyEnabled(tool.id);
                 return (
                   <TabsContent key={tool.id} value={tool.id}>
                     <ToolProfileTabContent
@@ -214,7 +224,7 @@ export function ProfileSwitchPage({
                       profiles={toolProfiles}
                       activeConfig={activeConfig}
                       globalConfig={globalConfig}
-                      transparentProxyEnabled={effectiveTransparentEnabled}
+                      transparentProxyEnabled={toolProxyEnabled}
                       switching={switching}
                       deletingProfiles={deletingProfiles}
                       sensors={sensors}

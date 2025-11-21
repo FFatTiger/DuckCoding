@@ -4,12 +4,12 @@ import {
   deleteProfile,
   getActiveConfig,
   getGlobalConfig,
-  startTransparentProxy,
-  stopTransparentProxy,
-  getTransparentProxyStatus,
+  startToolProxy,
+  stopToolProxy,
+  getAllProxyStatus,
   type ToolStatus,
   type GlobalConfig,
-  type TransparentProxyStatus,
+  type AllProxyStatus,
 } from '@/lib/tauri-commands';
 import { useProfileLoader } from '@/hooks/useProfileLoader';
 
@@ -21,10 +21,8 @@ export function useProfileManagement(
   const [deletingProfiles, setDeletingProfiles] = useState<Record<string, boolean>>({});
   const [selectedProfile, setSelectedProfile] = useState<Record<string, string>>({});
   const [globalConfig, setGlobalConfig] = useState<GlobalConfig | null>(null);
-  const [transparentProxyStatus, setTransparentProxyStatus] =
-    useState<TransparentProxyStatus | null>(null);
-  const [startingProxy, setStartingProxy] = useState(false);
-  const [stoppingProxy, setStoppingProxy] = useState(false);
+  const [allProxyStatus, setAllProxyStatus] = useState<AllProxyStatus>({});
+  const [loadingTools, setLoadingTools] = useState<Set<string>>(new Set());
 
   // 使用共享配置加载 Hook，传入排序转换函数
   const { profiles, setProfiles, activeConfigs, setActiveConfigs, loadAllProfiles } =
@@ -40,15 +38,39 @@ export function useProfileManagement(
     }
   }, []);
 
-  // 加载透明代理状态
-  const loadTransparentProxyStatus = useCallback(async () => {
+  // 加载所有工具的代理状态
+  const loadAllProxyStatus = useCallback(async () => {
     try {
-      const status = await getTransparentProxyStatus();
-      setTransparentProxyStatus(status);
+      const status = await getAllProxyStatus();
+      setAllProxyStatus(status);
     } catch (error) {
-      console.error('Failed to load transparent proxy status:', error);
+      console.error('Failed to load all proxy status:', error);
     }
   }, []);
+
+  // 获取指定工具的代理是否启用
+  const isToolProxyEnabled = useCallback(
+    (toolId: string): boolean => {
+      return globalConfig?.proxy_configs?.[toolId]?.enabled || false;
+    },
+    [globalConfig],
+  );
+
+  // 获取指定工具的代理是否运行中
+  const isToolProxyRunning = useCallback(
+    (toolId: string): boolean => {
+      return allProxyStatus[toolId]?.running || false;
+    },
+    [allProxyStatus],
+  );
+
+  // 检查工具是否正在加载
+  const isToolLoading = useCallback(
+    (toolId: string): boolean => {
+      return loadingTools.has(toolId);
+    },
+    [loadingTools],
+  );
 
   // 切换配置
   const handleSwitchProfile = useCallback(
@@ -64,8 +86,7 @@ export function useProfileManagement(
         setSwitching(true);
 
         // 检查是否启用了透明代理
-        const isProxyEnabled =
-          globalConfig?.transparent_proxy_enabled && transparentProxyStatus?.running;
+        const isProxyEnabled = isToolProxyEnabled(toolId) && isToolProxyRunning(toolId);
 
         // 切换配置（后端会自动处理透明代理更新）
         await switchProfile(toolId, profile);
@@ -79,26 +100,20 @@ export function useProfileManagement(
           console.error('Failed to reload active config', error);
         }
 
-        // 如果是 ClaudeCode，总是刷新配置确保UI显示正确
-        if (toolId === 'claude-code') {
-          await loadGlobalConfig();
-          if (isProxyEnabled) {
-            return {
-              success: true,
-              message: '✅ 配置已切换\n✅ 透明代理已自动更新\n无需重启终端',
-              isProxyEnabled: true,
-            };
-          } else {
-            return {
-              success: true,
-              message: '配置切换成功！\n请重启相关 CLI 工具以使新配置生效。',
-              isProxyEnabled: false,
-            };
-          }
+        // 刷新配置确保UI显示正确
+        await loadGlobalConfig();
+
+        if (isProxyEnabled) {
+          return {
+            success: true,
+            message: '✅ 配置已切换\n✅ 透明代理已自动更新\n无需重启终端',
+            isProxyEnabled: true,
+          };
         } else {
           return {
             success: true,
             message: '配置切换成功！\n请重启相关 CLI 工具以使新配置生效。',
+            isProxyEnabled: false,
           };
         }
       } catch (error) {
@@ -111,7 +126,7 @@ export function useProfileManagement(
         setSwitching(false);
       }
     },
-    [globalConfig, transparentProxyStatus, loadGlobalConfig, setActiveConfigs],
+    [isToolProxyEnabled, isToolProxyRunning, loadGlobalConfig, setActiveConfigs],
   );
 
   // 删除配置
@@ -191,66 +206,82 @@ export function useProfileManagement(
     [profiles, activeConfigs, loadAllProfiles, setProfiles, setActiveConfigs],
   );
 
-  // 启动透明代理
-  const handleStartTransparentProxy = useCallback(async (): Promise<{
-    success: boolean;
-    message: string;
-  }> => {
-    try {
-      setStartingProxy(true);
-      const result = await startTransparentProxy();
-      // 重新加载状态
-      const status = await getTransparentProxyStatus();
-      setTransparentProxyStatus(status);
-      return {
-        success: true,
-        message: result,
-      };
-    } catch (error) {
-      console.error('Failed to start transparent proxy:', error);
-      return {
-        success: false,
-        message: String(error),
-      };
-    } finally {
-      setStartingProxy(false);
-    }
-  }, []);
-
-  // 停止透明代理
-  const handleStopTransparentProxy = useCallback(async (): Promise<{
-    success: boolean;
-    message: string;
-  }> => {
-    try {
-      setStoppingProxy(true);
-      const result = await stopTransparentProxy();
-      // 重新加载状态
-      const status = await getTransparentProxyStatus();
-      setTransparentProxyStatus(status);
-
-      // 刷新当前生效配置（确保UI显示正确更新）
+  // 启动指定工具的透明代理
+  const handleStartToolProxy = useCallback(
+    async (
+      toolId: string,
+    ): Promise<{
+      success: boolean;
+      message: string;
+    }> => {
       try {
-        const activeConfig = await getActiveConfig('claude-code');
-        setActiveConfigs((prev) => ({ ...prev, 'claude-code': activeConfig }));
+        setLoadingTools((prev) => new Set(prev).add(toolId));
+        const result = await startToolProxy(toolId);
+        // 重新加载状态
+        await loadAllProxyStatus();
+        return {
+          success: true,
+          message: result,
+        };
       } catch (error) {
-        console.error('Failed to reload active config after stopping proxy:', error);
+        console.error('Failed to start tool proxy:', error);
+        return {
+          success: false,
+          message: String(error),
+        };
+      } finally {
+        setLoadingTools((prev) => {
+          const next = new Set(prev);
+          next.delete(toolId);
+          return next;
+        });
       }
+    },
+    [loadAllProxyStatus],
+  );
 
-      return {
-        success: true,
-        message: result,
-      };
-    } catch (error) {
-      console.error('Failed to stop transparent proxy:', error);
-      return {
-        success: false,
-        message: String(error),
-      };
-    } finally {
-      setStoppingProxy(false);
-    }
-  }, [setActiveConfigs]);
+  // 停止指定工具的透明代理
+  const handleStopToolProxy = useCallback(
+    async (
+      toolId: string,
+    ): Promise<{
+      success: boolean;
+      message: string;
+    }> => {
+      try {
+        setLoadingTools((prev) => new Set(prev).add(toolId));
+        const result = await stopToolProxy(toolId);
+        // 重新加载状态
+        await loadAllProxyStatus();
+
+        // 刷新当前生效配置（确保UI显示正确更新）
+        try {
+          const activeConfig = await getActiveConfig(toolId);
+          setActiveConfigs((prev) => ({ ...prev, [toolId]: activeConfig }));
+        } catch (error) {
+          console.error('Failed to reload active config after stopping proxy:', error);
+        }
+
+        return {
+          success: true,
+          message: result,
+        };
+      } catch (error) {
+        console.error('Failed to stop tool proxy:', error);
+        return {
+          success: false,
+          message: String(error),
+        };
+      } finally {
+        setLoadingTools((prev) => {
+          const next = new Set(prev);
+          next.delete(toolId);
+          return next;
+        });
+      }
+    },
+    [loadAllProxyStatus, setActiveConfigs],
+  );
 
   return {
     // State
@@ -261,17 +292,20 @@ export function useProfileManagement(
     setProfiles,
     activeConfigs,
     globalConfig,
-    transparentProxyStatus,
-    startingProxy,
-    stoppingProxy,
+    allProxyStatus,
 
     // Actions
     loadGlobalConfig,
-    loadTransparentProxyStatus,
+    loadAllProxyStatus,
     loadAllProfiles,
     handleSwitchProfile,
     handleDeleteProfile,
-    handleStartTransparentProxy,
-    handleStopTransparentProxy,
+    handleStartToolProxy,
+    handleStopToolProxy,
+
+    // Helpers
+    isToolProxyEnabled,
+    isToolProxyRunning,
+    isToolLoading,
   };
 }

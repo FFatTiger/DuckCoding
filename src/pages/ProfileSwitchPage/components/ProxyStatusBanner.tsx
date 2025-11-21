@@ -3,6 +3,8 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Power, AlertCircle, Sparkles, Settings as SettingsIcon } from 'lucide-react';
 
 interface ProxyStatusBannerProps {
+  toolId: string;
+  toolName: string;
   isEnabled: boolean;
   isRunning: boolean;
   startingProxy: boolean;
@@ -13,6 +15,8 @@ interface ProxyStatusBannerProps {
 }
 
 export function ProxyStatusBanner({
+  toolId: _toolId,
+  toolName,
   isEnabled,
   isRunning,
   startingProxy,
@@ -32,7 +36,7 @@ export function ProxyStatusBanner({
               <Power className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
               <div className="space-y-1 flex-1">
                 <h4 className="font-semibold text-blue-900 dark:text-blue-100 flex items-center gap-2">
-                  ClaudeCode 透明代理
+                  {toolName} 透明代理
                   <Badge variant="default" className="text-xs">
                     运行中
                   </Badge>
@@ -83,7 +87,7 @@ export function ProxyStatusBanner({
                 </Badge>
               </h4>
               <p className="text-sm text-red-800 dark:text-red-200 font-medium">
-                您已启用透明代理但尚未启动服务！ClaudeCode 当前
+                您已启用 {toolName} 透明代理但尚未启动服务！该工具当前
                 <strong className="underline">无法正常使用</strong>
                 ，请立即启动代理或在设置中禁用透明代理功能。
               </p>
@@ -123,7 +127,7 @@ export function ProxyStatusBanner({
         <Sparkles className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
         <div className="space-y-2 flex-1">
           <h4 className="font-semibold text-green-900 dark:text-green-100 flex items-center gap-2">
-            💡 推荐体验：ClaudeCode 透明代理
+            💡 推荐体验：{toolName} 透明代理
             <Badge
               variant="outline"
               className="text-xs border-green-600 text-green-700 dark:text-green-300"
@@ -132,7 +136,7 @@ export function ProxyStatusBanner({
             </Badge>
           </h4>
           <p className="text-sm text-green-800 dark:text-green-200">
-            启用透明代理后，切换 ClaudeCode 配置<strong>无需重启终端</strong>
+            启用透明代理后，切换 {toolName} 配置<strong>无需重启终端</strong>
             ，配置实时生效！大幅提升工作效率。
           </p>
           <div className="flex gap-2 mt-3">
