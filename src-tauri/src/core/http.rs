@@ -110,6 +110,7 @@ mod tests {
             transparent_proxy_real_api_key: None,
             transparent_proxy_real_base_url: None,
             proxy_configs: std::collections::HashMap::new(),
+            session_endpoint_config_enabled: false,
         };
 
         let url = build_proxy_url(&config).unwrap();
@@ -135,6 +136,7 @@ mod tests {
             transparent_proxy_real_api_key: None,
             transparent_proxy_real_base_url: None,
             proxy_configs: std::collections::HashMap::new(),
+            session_endpoint_config_enabled: false,
         };
 
         let url = build_proxy_url(&config).unwrap();

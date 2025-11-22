@@ -226,6 +226,7 @@ mod tests {
             transparent_proxy_real_base_url: None,
             transparent_proxy_allow_public: false,
             proxy_configs: std::collections::HashMap::new(),
+            session_endpoint_config_enabled: false,
         };
 
         let url = ProxyService::build_proxy_url(&config);
@@ -251,6 +252,7 @@ mod tests {
             transparent_proxy_real_base_url: None,
             transparent_proxy_allow_public: false,
             proxy_configs: std::collections::HashMap::new(),
+            session_endpoint_config_enabled: false,
         };
 
         let url = ProxyService::build_proxy_url(&config);
@@ -279,6 +281,7 @@ mod tests {
             transparent_proxy_real_base_url: None,
             transparent_proxy_allow_public: false,
             proxy_configs: std::collections::HashMap::new(),
+            session_endpoint_config_enabled: false,
         };
 
         let url = ProxyService::build_proxy_url(&config);

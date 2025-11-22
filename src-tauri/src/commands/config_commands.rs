@@ -867,3 +867,55 @@ pub fn save_gemini_settings(settings: Value, env: GeminiEnvPayload) -> Result<()
 pub fn get_gemini_schema() -> Result<Value, String> {
     ConfigService::get_gemini_schema().map_err(|e| e.to_string())
 }
+
+/// 读取指定配置文件的详情（不激活）
+#[tauri::command]
+pub async fn get_profile_config(tool: String, profile: String) -> Result<ActiveConfig, String> {
+    let tool_obj = Tool::by_id(&tool).ok_or_else(|| format!("未知的工具: {}", tool))?;
+
+    match tool.as_str() {
+        "claude-code" => {
+            let backup_path = tool_obj.backup_path(&profile);
+            if !backup_path.exists() {
+                return Err(format!("配置文件不存在: {}", profile));
+            }
+
+            // 读取备份配置文件
+            let backup_content =
+                fs::read_to_string(&backup_path).map_err(|e| format!("读取配置文件失败: {}", e))?;
+            let backup_data: Value = serde_json::from_str(&backup_content)
+                .map_err(|e| format!("解析配置文件失败: {}", e))?;
+
+            // 兼容新旧格式读取 API Key
+            let api_key = backup_data
+                .get("ANTHROPIC_AUTH_TOKEN")
+                .and_then(|v| v.as_str())
+                .or_else(|| {
+                    backup_data
+                        .get("env")
+                        .and_then(|env| env.get("ANTHROPIC_AUTH_TOKEN"))
+                        .and_then(|v| v.as_str())
+                })
+                .ok_or_else(|| "配置文件格式错误：缺少 API Key".to_string())?;
+
+            // 兼容新旧格式读取 Base URL
+            let base_url = backup_data
+                .get("ANTHROPIC_BASE_URL")
+                .and_then(|v| v.as_str())
+                .or_else(|| {
+                    backup_data
+                        .get("env")
+                        .and_then(|env| env.get("ANTHROPIC_BASE_URL"))
+                        .and_then(|v| v.as_str())
+                })
+                .ok_or_else(|| "配置文件格式错误：缺少 Base URL".to_string())?;
+
+            Ok(ActiveConfig {
+                api_key: api_key.to_string(),
+                base_url: base_url.to_string(),
+                profile_name: Some(profile),
+            })
+        }
+        _ => Err(format!("暂不支持的工具: {}", tool)),
+    }
+}

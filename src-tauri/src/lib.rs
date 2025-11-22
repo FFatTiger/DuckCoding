@@ -21,6 +21,8 @@ pub use services::version::VersionService;
 // Re-export new proxy architecture types
 pub use models::ToolProxyConfig;
 pub use services::proxy::{ProxyInstance, ProxyManager, RequestProcessor};
+// Re-export session management types
+pub use services::session::{ProxySession, SessionEvent, SessionListResponse, SESSION_MANAGER};
 
 // Re-export selected utils items to avoid conflicts with update::PlatformInfo
 pub use utils::command::*;

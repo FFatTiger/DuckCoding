@@ -1,6 +1,7 @@
 // Claude Code 请求处理器
 
 use super::{ProcessedRequest, RequestProcessor};
+use crate::services::session::{SessionEvent, SESSION_MANAGER};
 use anyhow::Result;
 use async_trait::async_trait;
 use bytes::Bytes;
@@ -30,8 +31,62 @@ impl RequestProcessor for ClaudeHeadersProcessor {
         original_headers: &HyperHeaderMap,
         body: &[u8],
     ) -> Result<ProcessedRequest> {
+        // 0. 查询会话配置并决定使用哪个 URL 和 API Key
+        let (final_base_url, final_api_key) = if !body.is_empty() {
+            // 尝试解析请求体 JSON 提取 user_id
+            if let Ok(json_body) = serde_json::from_slice::<serde_json::Value>(body) {
+                if let Some(user_id) = json_body["metadata"]["user_id"].as_str() {
+                    let timestamp = chrono::Utc::now().timestamp();
+
+                    // 查询会话配置
+                    if let Ok(Some((config_name, session_url, session_api_key))) =
+                        SESSION_MANAGER.get_session_config(user_id)
+                    {
+                        // 如果是自定义配置且有 URL 和 API Key，使用数据库的配置
+                        if config_name == "custom"
+                            && !session_url.is_empty()
+                            && !session_api_key.is_empty()
+                        {
+                            // 记录会话事件（使用自定义配置）
+                            let _ = SESSION_MANAGER.send_event(SessionEvent::NewRequest {
+                                session_id: user_id.to_string(),
+                                tool_id: "claude-code".to_string(),
+                                timestamp,
+                            });
+                            (session_url, session_api_key)
+                        } else {
+                            // 使用全局配置并记录会话
+                            let _ = SESSION_MANAGER.send_event(SessionEvent::NewRequest {
+                                session_id: user_id.to_string(),
+                                tool_id: "claude-code".to_string(),
+                                timestamp,
+                            });
+                            (base_url.to_string(), api_key.to_string())
+                        }
+                    } else {
+                        // 会话不存在，使用全局配置并记录新会话
+                        let _ = SESSION_MANAGER.send_event(SessionEvent::NewRequest {
+                            session_id: user_id.to_string(),
+                            tool_id: "claude-code".to_string(),
+                            timestamp,
+                        });
+                        (base_url.to_string(), api_key.to_string())
+                    }
+                } else {
+                    // 没有 user_id，使用全局配置
+                    (base_url.to_string(), api_key.to_string())
+                }
+            } else {
+                // JSON 解析失败，使用全局配置
+                (base_url.to_string(), api_key.to_string())
+            }
+        } else {
+            // 空 body，使用全局配置
+            (base_url.to_string(), api_key.to_string())
+        };
+
         // 1. 构建目标 URL（标准拼接）
-        let base = base_url.trim_end_matches('/');
+        let base = final_base_url.trim_end_matches('/');
         let query_str = query.map(|q| format!("?{}", q)).unwrap_or_default();
         let target_url = format!("{}{}{}", base, path, query_str);
 
@@ -52,7 +107,7 @@ impl RequestProcessor for ClaudeHeadersProcessor {
         // 3. 添加真实的 API Key
         headers.insert(
             "authorization",
-            format!("Bearer {}", api_key)
+            format!("Bearer {}", final_api_key)
                 .parse()
                 .map_err(|e| anyhow::anyhow!("Invalid authorization header: {}", e))?,
         );

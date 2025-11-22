@@ -316,6 +316,7 @@ fn main() {
             switch_profile,
             delete_profile,
             get_active_config,
+            get_profile_config,
             save_global_config,
             get_global_config,
             generate_api_key_for_tool,
@@ -344,6 +345,12 @@ fn main() {
             start_tool_proxy,
             stop_tool_proxy,
             get_all_proxy_status,
+            // 会话管理命令
+            get_session_list,
+            delete_session,
+            clear_all_sessions,
+            update_session_config,
+            update_session_note,
             // 更新管理相关命令
             check_for_app_updates,
             download_app_update,
