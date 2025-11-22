@@ -1,10 +1,11 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Power, AlertCircle, Info, Sparkles, Save } from 'lucide-react';
+import { Loader2, Power, AlertCircle, Info, Sparkles, Save, Copy, Check } from 'lucide-react';
 import { useMultiToolProxy, SUPPORTED_TOOLS, type ToolMetadata } from '../hooks/useMultiToolProxy';
 import { useToast } from '@/hooks/use-toast';
 import type { ToolProxyConfig, TransparentProxyStatus } from '@/lib/tauri-commands';
@@ -31,6 +32,19 @@ function ToolProxyCard({
 }) {
   const isRunning = status?.running || false;
   const actualPort = status?.port || config.port;
+  const [copied, setCopied] = useState(false);
+
+  // 复制 API Key 到剪贴板
+  const handleCopy = async () => {
+    if (!config.local_api_key) return;
+    try {
+      await navigator.clipboard.writeText(config.local_api_key);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy:', error);
+    }
+  };
 
   return (
     <div
@@ -115,15 +129,32 @@ function ToolProxyCard({
                 生成
               </Button>
             </div>
-            <Input
-              id={`${tool.id}-api-key`}
-              type="password"
-              placeholder="点击「生成」按钮自动生成"
-              value={config.local_api_key || ''}
-              onChange={(e) => onConfigChange({ local_api_key: e.target.value || null })}
-              disabled={isRunning}
-              className="h-8 text-sm font-mono"
-            />
+            <div className="flex gap-1">
+              <Input
+                id={`${tool.id}-api-key`}
+                type="password"
+                placeholder="点击「生成」按钮自动生成"
+                value={config.local_api_key || ''}
+                onChange={(e) => onConfigChange({ local_api_key: e.target.value || null })}
+                disabled={isRunning}
+                className="h-8 text-sm font-mono flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleCopy}
+                disabled={!config.local_api_key}
+                className="h-8 px-2"
+                title="复制密钥"
+              >
+                {copied ? (
+                  <Check className="h-3 w-3 text-green-500" />
+                ) : (
+                  <Copy className="h-3 w-3" />
+                )}
+              </Button>
+            </div>
           </div>
 
           {/* 启动/停止按钮 */}
