@@ -4,7 +4,7 @@ use crate::models::update::{
 };
 use crate::services::downloader::{DownloadEvent, FileDownloader};
 use anyhow::{anyhow, Context, Result};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Instant;
 use tokio::fs;
@@ -584,20 +584,8 @@ impl UpdateService {
         #[cfg(target_os = "macos")]
         {
             if file_name.ends_with(".dmg") {
-                println!("执行 macOS DMG 挂载");
-                let mut child = tokio::process::Command::new("hdiutil")
-                    .arg("attach")
-                    .arg(update_path)
-                    .spawn()
-                    .context("Failed to mount DMG")?;
-
-                let status = child.wait().await.context("DMG mounting failed")?;
-                if !status.success() {
-                    return Err(anyhow!(
-                        "DMG mounting failed with exit code: {:?}",
-                        status.code()
-                    ));
-                }
+                println!("准备安装 macOS DMG 包: {}", update_path);
+                self.install_dmg_package(update_path).await?;
             } else if file_name.ends_with(".pkg") {
                 // macOS 安装包
                 println!("执行 macOS PKG 安装程序");
@@ -695,6 +683,115 @@ impl UpdateService {
     async fn restore_from_backup(&self, _backup_dir: &std::path::Path) -> Result<()> {
         // 从备份恢复的具体实现
         Ok(())
+    }
+
+    #[cfg(target_os = "macos")]
+    async fn install_dmg_package(&self, dmg_path: &str) -> Result<()> {
+        use tokio::process::Command;
+
+        let mount_point = self.update_dir.join("mount");
+        if mount_point.exists() {
+            let _ = fs::remove_dir_all(&mount_point).await;
+        }
+        fs::create_dir_all(&mount_point)
+            .await
+            .context("Failed to create DMG mount directory")?;
+
+        let status = Command::new("hdiutil")
+            .arg("attach")
+            .arg(dmg_path)
+            .arg("-mountpoint")
+            .arg(&mount_point)
+            .arg("-nobrowse")
+            .arg("-quiet")
+            .status()
+            .await
+            .context("Failed to execute hdiutil attach")?;
+
+        if !status.success() {
+            return Err(anyhow!(
+                "DMG mounting failed with exit code: {:?}",
+                status.code()
+            ));
+        }
+
+        let install_result = async {
+            let app_bundle = self
+                .find_app_bundle_in_mount(&mount_point)
+                .await
+                .context("Failed to locate .app bundle inside DMG")?;
+            let target_bundle =
+                Self::resolve_current_app_bundle().context("Failed to resolve app bundle path")?;
+            self.copy_app_bundle(&app_bundle, &target_bundle).await
+        }
+        .await;
+
+        let _ = Command::new("hdiutil")
+            .arg("detach")
+            .arg(&mount_point)
+            .arg("-quiet")
+            .status()
+            .await;
+
+        let _ = fs::remove_dir_all(&mount_point).await;
+
+        install_result
+    }
+
+    #[cfg(target_os = "macos")]
+    async fn find_app_bundle_in_mount(&self, mount_point: &Path) -> Result<PathBuf> {
+        let mut entries = fs::read_dir(mount_point)
+            .await
+            .context("Failed to read DMG contents")?;
+
+        while let Some(entry) = entries
+            .next_entry()
+            .await
+            .context("Failed to enumerate DMG entries")?
+        {
+            let path = entry.path();
+            if path.extension().and_then(|ext| ext.to_str()) == Some("app") {
+                return Ok(path);
+            }
+        }
+
+        Err(anyhow!("No .app bundle found inside mounted DMG"))
+    }
+
+    #[cfg(target_os = "macos")]
+    async fn copy_app_bundle(&self, source: &Path, target: &Path) -> Result<()> {
+        use tokio::process::Command;
+
+        if let Some(parent) = target.parent() {
+            fs::create_dir_all(parent)
+                .await
+                .context("Failed to create target application directory")?;
+        }
+
+        println!("复制新的应用程序包到 {:?} (来源 {:?})", target, source);
+        let status = Command::new("ditto")
+            .arg(source)
+            .arg(target)
+            .status()
+            .await
+            .context("Failed to execute ditto command")?;
+
+        if !status.success() {
+            return Err(anyhow!("ditto failed with exit code: {:?}", status.code()));
+        }
+
+        Ok(())
+    }
+
+    #[cfg(target_os = "macos")]
+    fn resolve_current_app_bundle() -> Result<PathBuf> {
+        let exe_path =
+            std::env::current_exe().context("Unable to determine current executable path")?;
+        let bundle_path = exe_path
+            .ancestors()
+            .nth(3)
+            .ok_or_else(|| anyhow!("Failed to resolve current .app bundle path"))?;
+        Ok(bundle_path.to_path_buf())
     }
 }
 
