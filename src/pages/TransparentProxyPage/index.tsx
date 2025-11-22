@@ -11,27 +11,13 @@ import { ProxyControlBar } from './components/ProxyControlBar';
 import { ToolContent } from './components/ToolContent';
 import { useToolProxyData } from './hooks/useToolProxyData';
 import { useProxyControl } from './hooks/useProxyControl';
-import type { ToolId, ToolMetadata, ProxySessionRecord } from './types/proxy-history';
+import type { ToolId, ToolMetadata } from './types/proxy-history';
 
 // 支持的工具列表
 const SUPPORTED_TOOLS: ToolMetadata[] = [
   { id: 'claude-code', name: 'Claude Code', icon: logoMap['claude-code'] },
   { id: 'codex', name: 'CodeX', icon: logoMap.codex },
   { id: 'gemini-cli', name: 'Gemini CLI', icon: logoMap['gemini-cli'] },
-];
-
-// 测试数据：Claude Code 会话记录
-const MOCK_CLAUDE_SESSIONS: ProxySessionRecord[] = [
-  {
-    sessionId: 'session-2025-001',
-    startTime: new Date('2025-01-22T10:30:00').toISOString(),
-    configUsed: '默认配置 (Anthropic Official)',
-  },
-  {
-    sessionId: 'session-2025-002',
-    startTime: new Date('2025-01-22T14:15:00').toISOString(),
-    configUsed: '开发环境配置 (Custom Dev)',
-  },
 ];
 
 /**
@@ -140,10 +126,7 @@ export function TransparentProxyPage() {
               />
 
               {/* 工具特定内容（工厂渲染） */}
-              <ToolContent
-                toolId={tool.id}
-                sessions={tool.id === 'claude-code' ? MOCK_CLAUDE_SESSIONS : undefined}
-              />
+              <ToolContent toolId={tool.id} />
             </TabsContent>
           );
         })}

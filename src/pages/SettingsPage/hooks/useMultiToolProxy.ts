@@ -109,6 +109,23 @@ export function useMultiToolProxy() {
     setHasUnsavedChanges(true);
   }, []);
 
+  // 获取会话级端点配置开关状态
+  const sessionEndpointConfigEnabled = globalConfig?.session_endpoint_config_enabled ?? false;
+
+  // 更新会话级端点配置开关
+  const setSessionEndpointConfigEnabled = useCallback(
+    async (enabled: boolean) => {
+      if (!globalConfig) return;
+      const configToSave: GlobalConfig = {
+        ...globalConfig,
+        session_endpoint_config_enabled: enabled,
+      };
+      await saveGlobalConfig(configToSave);
+      setGlobalConfig(configToSave);
+    },
+    [globalConfig],
+  );
+
   // 保存配置到后端
   const saveToolConfigs = useCallback(async (): Promise<void> => {
     if (!globalConfig) {
@@ -219,6 +236,8 @@ export function useMultiToolProxy() {
     toolConfigs,
     savingConfig,
     hasUnsavedChanges,
+    sessionEndpointConfigEnabled,
+    setSessionEndpointConfigEnabled,
     loadGlobalConfig,
     loadAllProxyStatus,
     updateToolConfig,

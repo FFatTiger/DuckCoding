@@ -1,7 +1,7 @@
 // ToolContent 工厂组件
 // 根据 toolId 动态渲染对应的内容组件
 
-import type { ToolId, ProxySessionRecord } from '../../types/proxy-history';
+import type { ToolId } from '../../types/proxy-history';
 import { ClaudeContent } from './ClaudeContent';
 import { CodexContent } from './CodexContent';
 import { GeminiContent } from './GeminiContent';
@@ -9,8 +9,6 @@ import { GeminiContent } from './GeminiContent';
 interface ToolContentProps {
   /** 工具 ID，用于决定渲染哪个内容组件 */
   toolId: ToolId;
-  /** 会话历史记录（可选，仅 Claude Code 使用） */
-  sessions?: ProxySessionRecord[];
 }
 
 /**
@@ -26,10 +24,10 @@ interface ToolContentProps {
  * 2. 实现新工具的内容组件（如 NewToolContent.tsx）
  * 3. 在此处添加新的 case 分支
  */
-export function ToolContent({ toolId, sessions }: ToolContentProps) {
+export function ToolContent({ toolId }: ToolContentProps) {
   switch (toolId) {
     case 'claude-code':
-      return <ClaudeContent sessions={sessions} />;
+      return <ClaudeContent />;
     case 'codex':
       return <CodexContent />;
     case 'gemini-cli':

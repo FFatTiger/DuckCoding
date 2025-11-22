@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 import { Loader2, Power, AlertCircle, Info, Sparkles, Save } from 'lucide-react';
 import { useMultiToolProxy, SUPPORTED_TOOLS, type ToolMetadata } from '../hooks/useMultiToolProxy';
 import { useToast } from '@/hooks/use-toast';
@@ -182,6 +183,8 @@ export function MultiToolProxySettings() {
   const {
     savingConfig,
     hasUnsavedChanges,
+    sessionEndpointConfigEnabled,
+    setSessionEndpointConfigEnabled,
     updateToolConfig,
     saveToolConfigs,
     generateApiKey,
@@ -309,6 +312,36 @@ export function MultiToolProxySettings() {
       </div>
 
       <Separator />
+
+      {/* 会话级端点配置开关 */}
+      <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+        <div className="space-y-0.5">
+          <Label className="text-sm font-medium">会话级端点配置</Label>
+          <p className="text-xs text-muted-foreground">
+            允许为每个代理会话单独配置 API 端点，支持多账户、多配置灵活切换
+          </p>
+        </div>
+        <Switch
+          checked={sessionEndpointConfigEnabled}
+          onCheckedChange={async (checked) => {
+            try {
+              await setSessionEndpointConfigEnabled(checked);
+              toast({
+                title: checked ? '已开启' : '已关闭',
+                description: checked
+                  ? '会话级端点配置已启用，可在透明代理管理页面为每个会话单独设置端点'
+                  : '会话级端点配置已关闭',
+              });
+            } catch (error) {
+              toast({
+                title: '操作失败',
+                description: String(error),
+                variant: 'destructive',
+              });
+            }
+          }}
+        />
+      </div>
 
       <div className="space-y-4">
         {SUPPORTED_TOOLS.map((tool) => (
