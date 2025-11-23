@@ -15,7 +15,7 @@ mod commands;
 use commands::*;
 
 // 导入透明代理服务
-use duckcoding::{ProxyManager, TransparentProxyService};
+use duckcoding::{ProxyManager, ToolStatusCache, TransparentProxyService};
 use std::sync::Arc;
 use tokio::sync::Mutex as TokioMutex;
 
@@ -140,15 +140,28 @@ fn main() {
     // 创建多工具代理管理器（新架构）
     let proxy_manager = Arc::new(ProxyManager::new());
     let proxy_manager_state = ProxyManagerState {
-        manager: proxy_manager,
+        manager: proxy_manager.clone(),
     };
 
+    // 异步启动配置了自启动的透明代理
+    let proxy_manager_for_auto_start = proxy_manager.clone();
+    tauri::async_runtime::spawn(async move {
+        duckcoding::auto_start_proxies(&proxy_manager_for_auto_start).await;
+    });
+
     let update_service_state = UpdateServiceState::new();
+
+    // 创建工具状态缓存
+    let tool_status_cache = Arc::new(ToolStatusCache::new());
+    let tool_status_cache_state = ToolStatusCacheState {
+        cache: tool_status_cache,
+    };
 
     let builder = tauri::Builder::default()
         .manage(transparent_proxy_state)
         .manage(proxy_manager_state)
         .manage(update_service_state)
+        .manage(tool_status_cache_state)
         .setup(|app| {
             // 尝试在应用启动时加载全局配置并应用代理设置,确保子进程继承代理 env
             apply_proxy_if_configured();
@@ -306,6 +319,7 @@ fn main() {
         }))
         .invoke_handler(tauri::generate_handler![
             check_installations,
+            refresh_tool_status,
             check_node_environment,
             install_tool,
             check_update,

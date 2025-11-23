@@ -18,6 +18,8 @@ pub use services::transparent_proxy::{ProxyConfig, TransparentProxyService};
 pub use services::transparent_proxy_config::TransparentProxyConfigService;
 pub use services::update::UpdateService;
 pub use services::version::VersionService;
+// Re-export tool status cache
+pub use services::tool::ToolStatusCache;
 // Re-export new proxy architecture types
 pub use models::ToolProxyConfig;
 pub use services::proxy::{ProxyInstance, ProxyManager, RequestProcessor};
@@ -55,3 +57,65 @@ pub use ui::{
     CLOSE_CONFIRM_EVENT,
     SINGLE_INSTANCE_EVENT,
 };
+
+/// 应用启动时自动启动符合条件的透明代理
+///
+/// 条件：`enabled: true` 且 `auto_start: true`
+pub async fn auto_start_proxies(manager: &ProxyManager) {
+    use utils::config::read_global_config;
+
+    println!("🚀 检查透明代理自启动配置...");
+
+    let config = match read_global_config() {
+        Ok(Some(cfg)) => cfg,
+        Ok(None) => {
+            println!("ℹ️ 未找到全局配置，跳过自启动");
+            return;
+        }
+        Err(e) => {
+            eprintln!("❌ 读取配置失败: {}", e);
+            return;
+        }
+    };
+
+    let mut started_count = 0;
+    let mut failed_count = 0;
+
+    for (tool_id, tool_config) in &config.proxy_configs {
+        // 检查是否满足自启动条件
+        if !tool_config.enabled || !tool_config.auto_start {
+            continue;
+        }
+
+        // 检查是否有保护密钥
+        if tool_config.local_api_key.is_none() {
+            println!("⚠️ {} 未配置保护密钥，跳过自启动", tool_id);
+            continue;
+        }
+
+        println!(
+            "🔄 正在自动启动 {} 代理 (端口 {})...",
+            tool_id, tool_config.port
+        );
+
+        match manager.start_proxy(tool_id, tool_config.clone()).await {
+            Ok(_) => {
+                println!("✅ {} 代理已自动启动", tool_id);
+                started_count += 1;
+            }
+            Err(e) => {
+                eprintln!("❌ {} 代理自启动失败: {}", tool_id, e);
+                failed_count += 1;
+            }
+        }
+    }
+
+    if started_count > 0 || failed_count > 0 {
+        println!(
+            "📊 自启动完成：成功 {} 个，失败 {} 个",
+            started_count, failed_count
+        );
+    } else {
+        println!("ℹ️ 没有配置自启动的代理");
+    }
+}
