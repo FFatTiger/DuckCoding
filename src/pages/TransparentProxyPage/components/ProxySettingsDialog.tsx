@@ -10,11 +10,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Sparkles, Copy, Check } from 'lucide-react';
+import { Sparkles, Copy, Check, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { ToolProxyConfig } from '@/lib/tauri-commands';
 import type { ToolId } from '../types/proxy-history';
@@ -30,6 +31,8 @@ interface ProxySettingsDialogProps {
   toolName: string;
   /** 当前配置 */
   config: ToolProxyConfig | null;
+  /** 代理是否运行中 */
+  isRunning: boolean;
   /** 保存配置回调 */
   onSave: (updates: Partial<ToolProxyConfig>) => Promise<void>;
 }
@@ -48,6 +51,7 @@ export function ProxySettingsDialog({
   toolId,
   toolName,
   config,
+  isRunning,
   onSave,
 }: ProxySettingsDialogProps) {
   const { toast } = useToast();
@@ -154,13 +158,21 @@ export function ProxySettingsDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {/* 运行时禁用提示 */}
+          {isRunning && (
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>代理运行时无法修改配置，请先停止代理后再进行修改</AlertDescription>
+            </Alert>
+          )}
+
           {/* 启用代理 */}
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label>启用代理</Label>
               <p className="text-xs text-muted-foreground">开启后可使用透明代理功能</p>
             </div>
-            <Switch checked={enabled} onCheckedChange={setEnabled} />
+            <Switch checked={enabled} onCheckedChange={setEnabled} disabled={isRunning} />
           </div>
 
           {enabled && (
@@ -175,6 +187,7 @@ export function ProxySettingsDialog({
                   max={65535}
                   value={port}
                   onChange={(e) => setPort(parseInt(e.target.value) || 8787)}
+                  disabled={isRunning}
                   className="w-full"
                 />
                 <p className="text-xs text-muted-foreground">代理服务监听的本地端口号</p>
@@ -189,6 +202,7 @@ export function ProxySettingsDialog({
                     variant="ghost"
                     size="sm"
                     onClick={handleGenerateApiKey}
+                    disabled={isRunning}
                     className="h-6 text-xs px-2"
                   >
                     <Sparkles className="h-3 w-3 mr-1" />
@@ -202,6 +216,7 @@ export function ProxySettingsDialog({
                     placeholder="点击「生成」按钮自动生成"
                     value={localApiKey}
                     onChange={(e) => setLocalApiKey(e.target.value)}
+                    disabled={isRunning}
                     className="flex-1 font-mono"
                   />
                   <Button
@@ -228,7 +243,11 @@ export function ProxySettingsDialog({
                   <Label>允许公网访问</Label>
                   <p className="text-xs text-muted-foreground">不推荐，可能存在安全风险</p>
                 </div>
-                <Switch checked={allowPublic} onCheckedChange={setAllowPublic} />
+                <Switch
+                  checked={allowPublic}
+                  onCheckedChange={setAllowPublic}
+                  disabled={isRunning}
+                />
               </div>
 
               {/* 会话级端点配置 */}
@@ -242,6 +261,7 @@ export function ProxySettingsDialog({
                 <Switch
                   checked={sessionEndpointEnabled}
                   onCheckedChange={setSessionEndpointEnabled}
+                  disabled={isRunning}
                 />
               </div>
 
@@ -251,7 +271,7 @@ export function ProxySettingsDialog({
                   <Label>应用启动时自动运行</Label>
                   <p className="text-xs text-muted-foreground">启动 DuckCoding 时自动启动此代理</p>
                 </div>
-                <Switch checked={autoStart} onCheckedChange={setAutoStart} />
+                <Switch checked={autoStart} onCheckedChange={setAutoStart} disabled={isRunning} />
               </div>
             </>
           )}

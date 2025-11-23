@@ -207,6 +207,7 @@ export function ProxyControlBar({
   const [detailsExpanded, setDetailsExpanded] = useState(false);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
+  const [shouldAutoStart, setShouldAutoStart] = useState(false); // 标记是否需要自动启动
 
   // 检查上游配置是否缺失
   const isUpstreamConfigMissing = isRunning && (!config?.real_base_url || !config?.real_api_key);
@@ -216,8 +217,20 @@ export function ProxyControlBar({
   const isProfileConfigured = !!currentProfileName;
 
   // 配置更新处理
-  const handleConfigUpdated = () => {
-    onConfigUpdated?.();
+  const handleConfigUpdated = async () => {
+    // 先刷新配置数据
+    if (onConfigUpdated) {
+      onConfigUpdated();
+    }
+
+    // 如果是启动前配置检查场景，配置更新后自动启动
+    if (shouldAutoStart) {
+      setShouldAutoStart(false);
+      // 等待配置刷新
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      // 启动代理
+      onStart();
+    }
   };
 
   // 保存设置处理
@@ -225,6 +238,19 @@ export function ProxyControlBar({
     if (onSaveSettings) {
       await onSaveSettings(updates);
     }
+  };
+
+  // 启动代理处理：检查上游配置
+  const handleStartProxy = () => {
+    // 检查上游配置是否缺失
+    if (!config?.real_base_url || !config?.real_api_key) {
+      // 配置缺失，标记需要自动启动，然后打开配置选择对话框
+      setShouldAutoStart(true);
+      setConfigDialogOpen(true);
+      return;
+    }
+    // 配置完整，正常启动
+    onStart();
   };
 
   return (
@@ -342,7 +368,7 @@ export function ProxyControlBar({
               type="button"
               variant="default"
               size="sm"
-              onClick={onStart}
+              onClick={handleStartProxy}
               disabled={isLoading || !isConfigured}
               className="h-8"
             >
@@ -398,6 +424,7 @@ export function ProxyControlBar({
         toolId={tool.id as ToolId}
         toolName={tool.name}
         config={config}
+        isRunning={isRunning}
         onSave={handleSaveSettings}
       />
     </div>
