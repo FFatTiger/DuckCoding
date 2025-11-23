@@ -160,6 +160,14 @@ export async function checkInstallations(): Promise<ToolStatus[]> {
   return await invoke<ToolStatus[]>('check_installations');
 }
 
+/**
+ * 刷新工具状态（清除缓存并重新检测）
+ * 用于用户手动刷新或外部安装/卸载工具后更新状态
+ */
+export async function refreshToolStatus(): Promise<ToolStatus[]> {
+  return await invoke<ToolStatus[]>('refresh_tool_status');
+}
+
 export async function checkNodeEnvironment(): Promise<NodeEnvironment> {
   return await invoke<NodeEnvironment>('check_node_environment');
 }
@@ -355,6 +363,7 @@ export interface ToolProxyConfig {
   real_profile_name: string | null; // 备份的配置名称
   allow_public: boolean;
   session_endpoint_config_enabled: boolean; // 工具级：是否允许会话自定义端点
+  auto_start: boolean; // 应用启动时自动运行代理（默认关闭）
 }
 
 export interface TransparentProxyStatus {
