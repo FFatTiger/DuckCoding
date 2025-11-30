@@ -65,11 +65,11 @@ export default function UpdateCompleteStep({ onNext, onPrevious }: StepProps) {
         </div>
 
         <div className="action-buttons">
-          <button type="button" onClick={onPrevious} className="btn-text">
+          <button type="button" onClick={() => onPrevious()} className="btn-text">
             上一步
           </button>
           <div className="action-right">
-            <button type="button" onClick={onNext} className="btn-primary btn-large">
+            <button type="button" onClick={() => onNext()} className="btn-primary btn-large">
               开始使用
             </button>
           </div>

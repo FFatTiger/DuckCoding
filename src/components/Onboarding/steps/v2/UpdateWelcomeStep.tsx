@@ -51,7 +51,7 @@ export default function UpdateWelcomeStep({ onNext }: StepProps) {
         <div className="action-buttons">
           <div></div>
           <div className="action-right">
-            <button type="button" onClick={onNext} className="btn-primary btn-large">
+            <button type="button" onClick={() => onNext()} className="btn-primary btn-large">
               开始了解
             </button>
           </div>

@@ -60,11 +60,11 @@ export default function LogFeatureStep({ onNext, onPrevious }: StepProps) {
         <p className="step-note">您可以在「设置 → 日志设置」中随时调整这些配置</p>
 
         <div className="action-buttons">
-          <button type="button" onClick={onPrevious} className="btn-text">
+          <button type="button" onClick={() => onPrevious()} className="btn-text">
             上一步
           </button>
           <div className="action-right">
-            <button type="button" onClick={onNext} className="btn-primary">
+            <button type="button" onClick={() => onNext()} className="btn-primary">
               下一步
             </button>
           </div>

@@ -163,22 +163,22 @@ export function SettingsPage({
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         <TabsList>
-          <TabsTrigger value="basic" disabled={restrictToTab && restrictToTab !== 'basic'}>
+          <TabsTrigger value="basic" disabled={!!restrictToTab && restrictToTab !== 'basic'}>
             基本设置
           </TabsTrigger>
-          <TabsTrigger value="proxy" disabled={restrictToTab && restrictToTab !== 'proxy'}>
+          <TabsTrigger value="proxy" disabled={!!restrictToTab && restrictToTab !== 'proxy'}>
             代理设置
           </TabsTrigger>
-          <TabsTrigger value="log" disabled={restrictToTab && restrictToTab !== 'log'}>
+          <TabsTrigger value="log" disabled={!!restrictToTab && restrictToTab !== 'log'}>
             日志配置
           </TabsTrigger>
           <TabsTrigger
             value="experimental"
-            disabled={restrictToTab && restrictToTab !== 'experimental'}
+            disabled={!!restrictToTab && restrictToTab !== 'experimental'}
           >
             透明代理
           </TabsTrigger>
-          <TabsTrigger value="about" disabled={restrictToTab && restrictToTab !== 'about'}>
+          <TabsTrigger value="about" disabled={!!restrictToTab && restrictToTab !== 'about'}>
             关于
           </TabsTrigger>
         </TabsList>

@@ -72,11 +72,11 @@ export default function SessionConfigStep({ onNext, onPrevious }: StepProps) {
         <p className="step-note">前往「透明代理」页面即可查看和管理所有工具的代理配置</p>
 
         <div className="action-buttons">
-          <button type="button" onClick={onPrevious} className="btn-text">
+          <button type="button" onClick={() => onPrevious()} className="btn-text">
             上一步
           </button>
           <div className="action-right">
-            <button type="button" onClick={onNext} className="btn-primary">
+            <button type="button" onClick={() => onNext()} className="btn-primary">
               下一步
             </button>
           </div>
