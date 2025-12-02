@@ -8,6 +8,7 @@
 // - session: 会话管理（透明代理请求追踪）
 
 pub mod config;
+pub mod config_watcher;
 pub mod migration;
 pub mod profile_store;
 pub mod proxy;
