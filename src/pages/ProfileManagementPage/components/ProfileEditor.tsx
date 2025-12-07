@@ -52,7 +52,7 @@ export function ProfileEditor({
     name: '',
     api_key: '',
     base_url: getDefaultBaseUrl(toolId),
-    provider: toolId === 'codex' ? 'custom' : undefined,
+    wire_api: toolId === 'codex' ? 'responses' : undefined,
     model: toolId === 'gemini-cli' ? 'gemini-2.0-flash-exp' : undefined,
   });
   const [loading, setLoading] = useState(false);

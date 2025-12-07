@@ -4,6 +4,7 @@ import {
   pmGetActiveProfile,
   type ToolStatus,
   type ProfileData,
+  type ToolId,
 } from '@/lib/tauri-commands';
 
 /**
@@ -34,12 +35,12 @@ export function useProfileLoader(
     // 并行加载所有工具的配置，提升性能
     const results = await Promise.allSettled(
       tools.flatMap((tool) => [
-        pmListToolProfiles(tool.id).then((profiles) => ({
+        pmListToolProfiles(tool.id as ToolId).then((profiles) => ({
           tool,
           type: 'profiles' as const,
           data: profileTransform ? profileTransform(tool.id, profiles) : profiles,
         })),
-        pmGetActiveProfile(tool.id).then((profile) => ({
+        pmGetActiveProfile(tool.id as ToolId).then((profile) => ({
           tool,
           type: 'active' as const,
           data: profile,

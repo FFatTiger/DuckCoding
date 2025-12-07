@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +22,7 @@ import {
   getWatcherStatus,
   saveWatcherSettings,
   type ExternalConfigChange,
+  type ToolId,
 } from '@/lib/tauri-commands';
 import { useToast } from '@/hooks/use-toast';
 
@@ -105,7 +106,7 @@ export function ConfigManagementTab() {
       }
 
       // 覆盖当前：直接用当前激活 profile
-      const profileName = (await pmGetActiveProfileName(toolId)) || 'default';
+      const profileName = (await pmGetActiveProfileName(toolId as ToolId)) || 'default';
       try {
         await importNativeChange(toolId, profileName, false);
         toast({

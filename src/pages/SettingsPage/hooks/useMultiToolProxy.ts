@@ -7,6 +7,7 @@ import {
   updateProxyConfig,
   type AllProxyStatus,
   type ToolProxyConfig,
+  type ToolId,
 } from '@/lib/tauri-commands';
 
 // 工具元数据
@@ -47,6 +48,7 @@ function getDefaultToolConfig(toolId: string): ToolProxyConfig {
     local_api_key: null,
     real_api_key: null,
     real_base_url: null,
+    real_model_provider: null,
     real_profile_name: null,
     allow_public: false,
     session_endpoint_config_enabled: false,
@@ -64,7 +66,7 @@ export function useMultiToolProxy() {
   // 加载单个工具配置
   const loadToolConfig = useCallback(async (toolId: string) => {
     try {
-      const config = await getProxyConfig(toolId);
+      const config = await getProxyConfig(toolId as ToolId);
       return config || getDefaultToolConfig(toolId);
     } catch (error) {
       console.error(`Failed to load ${toolId} config:`, error);
@@ -116,7 +118,7 @@ export function useMultiToolProxy() {
     try {
       // 保存每个工具的配置到 ProxyConfigManager
       for (const [toolId, config] of Object.entries(toolConfigs)) {
-        await updateProxyConfig(toolId, config);
+        await updateProxyConfig(toolId as ToolId, config);
       }
       setHasUnsavedChanges(false);
     } catch (error) {

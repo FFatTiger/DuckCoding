@@ -2,6 +2,9 @@ import { invoke } from '@tauri-apps/api/core';
 import type { ToolInstance, SSHConfig } from '@/types/tool-management';
 import type { ProfileData, ProfileDescriptor, ProfilePayload, ToolId } from '@/types/profile';
 
+// 重新导出 Profile 相关类型供其他模块使用
+export type { ProfileData, ProfileDescriptor, ProfilePayload, ToolId };
+
 export interface ToolStatus {
   mirrorIsStale: boolean;
   mirrorVersion: string | null;
@@ -178,18 +181,6 @@ export interface GeminiEnvConfig {
 export interface GeminiSettingsPayload {
   settings: JsonObject;
   env: GeminiEnvConfig;
-}
-
-export interface ProfileDescriptor {
-  tool_id: string;
-  name: string;
-  format: string;
-  path: string;
-  updated_at?: string;
-  created_at?: string;
-  source?: string;
-  checksum?: string;
-  tags?: string[];
 }
 
 export interface ExternalConfigChange {
