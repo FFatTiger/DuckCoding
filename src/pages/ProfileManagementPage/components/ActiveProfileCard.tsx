@@ -396,7 +396,9 @@ function ConfigField({ label, value }: ConfigFieldProps) {
   return (
     <div className="space-y-1">
       <span className="text-xs text-muted-foreground">{label}</span>
-      <code className="block px-2 py-1 bg-muted rounded text-xs font-mono truncate">{value}</code>
+      <code className="block px-2 py-1 bg-muted rounded text-xs font-mono break-words whitespace-pre-wrap">
+        {value}
+      </code>
     </div>
   );
 }

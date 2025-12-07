@@ -9,7 +9,7 @@ export const BALANCE_TEMPLATES: BalanceTemplate[] = [
     id: 'newapi',
     name: 'NewAPI',
     description: 'NewAPI 中转服务余额查询',
-    endpoint: 'https://your-newapi-domain.com/api/user/self',
+    endpoint: 'https://your-newapi-domain.com/api/usage/token',
     method: 'GET',
     staticHeaders: {
       'Content-Type': 'application/json',
@@ -17,10 +17,10 @@ export const BALANCE_TEMPLATES: BalanceTemplate[] = [
     extractorScript: `const extractor = (response) => {
   // NewAPI 响应格式示例
   return {
-    planName: response.data?.username || 'Unknown',
-    remaining: (response.data?.quota - response.data?.used_quota) / 500000,
-    used: response.data?.used_quota / 500000,
-    total: response.data?.quota / 500000,
+    planName: response.data?.name || 'Unknown',
+    remaining: response.data?.total_available / 500000,
+    used: response.data?.total_used / 500000,
+    total: response.data?.total_granted / 500000,
     unit: 'USD',
   };
 };`,
