@@ -166,7 +166,7 @@ export function ActiveProfileCard({ group, proxyRunning }: ActiveProfileCardProp
   return (
     <div
       className={`p-4 rounded-lg border-2 mb-6 transition-all ${
-        activeProfile
+        activeProfile || proxyRunning
           ? 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-blue-300 dark:border-blue-700'
           : 'bg-muted/30 border-border'
       }`}
@@ -177,10 +177,19 @@ export function ActiveProfileCard({ group, proxyRunning }: ActiveProfileCardProp
           <div>
             <div className="flex items-center gap-2 mb-1">
               <h4 className="font-semibold">{group.tool_name}</h4>
-              <Badge variant={activeProfile ? 'default' : 'secondary'} className="text-xs">
-                {activeProfile ? (proxyRunning ? '透明代理模式' : '激活中') : '未激活'}
+              <Badge
+                variant={activeProfile || proxyRunning ? 'default' : 'destructive'}
+                className="text-xs"
+              >
+                {activeProfile
+                  ? proxyRunning
+                    ? '透明代理模式'
+                    : '激活中'
+                  : proxyRunning
+                    ? '透明代理模式'
+                    : '未激活'}
               </Badge>
-              {activeProfile && (
+              {(activeProfile || proxyRunning) && (
                 <>
                   <Badge variant="outline" className="text-xs font-normal">
                     {proxyRunning ? '配置:透明代理' : `配置:${activeProfile.name}`}
@@ -355,12 +364,7 @@ export function ActiveProfileCard({ group, proxyRunning }: ActiveProfileCardProp
             </div>
           )}
         </>
-      ) : (
-        <div className="text-center py-4 text-muted-foreground">
-          <p className="text-sm">暂无激活的 Profile</p>
-          <p className="text-xs mt-1">请创建并激活一个配置</p>
-        </div>
-      )}
+      ) : null}
     </div>
   );
 }

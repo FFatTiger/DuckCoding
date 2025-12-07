@@ -705,7 +705,7 @@ impl Migration for ProfileV2Migration {
     }
 
     fn target_version(&self) -> &str {
-        "2.0.0"
+        "1.4.0"
     }
 
     async fn execute(&self) -> Result<MigrationResult> {

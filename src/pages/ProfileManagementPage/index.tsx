@@ -3,9 +3,16 @@
  */
 
 import { useState, useEffect } from 'react';
-import { RefreshCw, Loader2 } from 'lucide-react';
+import { RefreshCw, Loader2, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { ProfileCard } from './components/ProfileCard';
 import { ProfileEditor } from './components/ProfileEditor';
@@ -32,6 +39,7 @@ export default function ProfileManagementPage() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorMode, setEditorMode] = useState<'create' | 'edit'>('create');
   const [editingProfile, setEditingProfile] = useState<ProfileDescriptor | null>(null);
+  const [helpDialogOpen, setHelpDialogOpen] = useState(false);
 
   // 初始化加载透明代理状态
   useEffect(() => {
@@ -98,10 +106,16 @@ export default function ProfileManagementPage() {
               管理所有工具的 Profile 配置，快速切换不同的 API 端点
             </p>
           </div>
-          <Button onClick={refresh} variant="outline" size="sm" disabled={loading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            刷新
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={() => setHelpDialogOpen(true)} variant="outline" size="sm">
+              <HelpCircle className="mr-2 h-4 w-4" />
+              帮助
+            </Button>
+            <Button onClick={refresh} variant="outline" size="sm" disabled={loading}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              刷新
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -196,6 +210,39 @@ export default function ProfileManagementPage() {
         initialData={getEditorInitialData()}
         onSave={handleSaveProfile}
       />
+
+      {/* 帮助弹窗 */}
+      <HelpDialog open={helpDialogOpen} onOpenChange={setHelpDialogOpen} />
     </PageContainer>
+  );
+}
+
+/**
+ * 帮助弹窗组件
+ */
+function HelpDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>配置管理帮助</DialogTitle>
+          <DialogDescription>了解如何使用 Profile 配置管理功能</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 text-sm">
+          <div className="space-y-2">
+            <h4 className="font-medium">1.正常配置模式[未开启透明代理]</h4>
+            <p className="text-muted-foreground">切换配置后，如果工具正在运行，需要重启对应的工具才能使新配置生效。</p>
+            <h4 className="font-medium">2.透明代理模式</h4>
+            <p className="text-muted-foreground">切换配置请前往透明代理页面进行，切换配置后无需重启工具即可生效。</p>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

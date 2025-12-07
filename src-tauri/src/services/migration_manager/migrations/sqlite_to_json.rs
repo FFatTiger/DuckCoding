@@ -7,7 +7,7 @@ use crate::services::tool::ToolInstanceDB;
 use anyhow::Result;
 use async_trait::async_trait;
 
-/// SQLite → JSON 迁移（目标版本 1.3.9）
+/// SQLite → JSON 迁移（目标版本 1.4.0）
 pub struct SqliteToJsonMigration;
 
 impl Default for SqliteToJsonMigration {
@@ -33,7 +33,7 @@ impl Migration for SqliteToJsonMigration {
     }
 
     fn target_version(&self) -> &str {
-        "1.3.8"
+        "1.4.0"
     }
 
     async fn execute(&self) -> Result<MigrationResult> {

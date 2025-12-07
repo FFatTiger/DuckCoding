@@ -4,10 +4,12 @@
 
 mod profile_v2;
 mod proxy_config;
+mod proxy_config_split;
 mod session_config;
 mod sqlite_to_json;
 
 pub use profile_v2::ProfileV2Migration;
 pub use proxy_config::ProxyConfigMigration;
+pub use proxy_config_split::ProxyConfigSplitMigration;
 pub use session_config::SessionConfigMigration;
 pub use sqlite_to_json::SqliteToJsonMigration;

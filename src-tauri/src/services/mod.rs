@@ -11,9 +11,10 @@
 pub mod config;
 pub mod config_watcher;
 pub mod migration_manager;
-pub mod profile_manager; // Profile管理（v2.0）
+pub mod profile_manager; // Profile管理（v2.1）
 pub mod profile_store;
 pub mod proxy;
+pub mod proxy_config_manager; // 透明代理配置管理（v2.1）
 pub mod session;
 pub mod tool;
 pub mod update;

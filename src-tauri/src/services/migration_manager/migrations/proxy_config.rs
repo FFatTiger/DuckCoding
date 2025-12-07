@@ -35,7 +35,7 @@ impl Migration for ProxyConfigMigration {
     }
 
     fn target_version(&self) -> &str {
-        "1.3.8"
+        "1.4.0"
     }
 
     async fn execute(&self) -> Result<MigrationResult> {

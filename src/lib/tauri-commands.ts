@@ -894,3 +894,31 @@ export async function pmGetActiveProfile(toolId: ToolId): Promise<ProfileData | 
 export async function pmCaptureFromNative(toolId: ToolId, name: string): Promise<void> {
   return invoke<void>('pm_capture_from_native', { toolId, name });
 }
+
+/**
+ * 从 Profile 更新代理配置（不激活 Profile）
+ */
+export async function updateProxyFromProfile(toolId: ToolId, profileName: string): Promise<void> {
+  return invoke<void>('update_proxy_from_profile', { toolId, profileName });
+}
+
+/**
+ * 获取指定工具的代理配置
+ */
+export async function getProxyConfig(toolId: ToolId): Promise<ToolProxyConfig | null> {
+  return invoke<ToolProxyConfig | null>('get_proxy_config', { toolId });
+}
+
+/**
+ * 更新指定工具的代理配置
+ */
+export async function updateProxyConfig(toolId: ToolId, config: ToolProxyConfig): Promise<void> {
+  return invoke<void>('update_proxy_config', { toolId, config });
+}
+
+/**
+ * 获取所有工具的代理配置
+ */
+export async function getAllProxyConfigs(): Promise<Record<string, ToolProxyConfig>> {
+  return invoke<Record<string, ToolProxyConfig>>('get_all_proxy_configs');
+}

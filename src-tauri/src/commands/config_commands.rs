@@ -434,18 +434,27 @@ pub async fn switch_profile(
             let is_running = manager_state.manager.is_running(&tool).await;
 
             if is_running {
-                // 更新 ProxyManager 中的配置
-                if let Some(tool_config) = global_config.get_proxy_config(&tool) {
-                    let mut updated_config = tool_config.clone();
-                    updated_config.real_api_key = Some(new_api_key.clone());
-                    updated_config.real_base_url = Some(new_base_url.clone());
-                    updated_config.real_profile_name = Some(profile.clone());
+                // 使用 ProxyConfigManager 更新配置
+                use ::duckcoding::services::proxy_config_manager::ProxyConfigManager;
+                let proxy_mgr = ProxyConfigManager::new().map_err(|e| e.to_string())?;
 
-                    manager_state
-                        .manager
-                        .update_config(&tool, updated_config)
-                        .await
-                        .map_err(|e| format!("更新代理配置失败: {e}"))?;
+                if let Ok(Some(mut proxy_config)) = proxy_mgr.get_config(&tool) {
+                    proxy_config.real_api_key = Some(new_api_key.clone());
+                    proxy_config.real_base_url = Some(new_base_url.clone());
+                    proxy_config.real_profile_name = Some(profile.clone());
+
+                    proxy_mgr
+                        .update_config(&tool, proxy_config)
+                        .map_err(|e| e.to_string())?;
+
+                    // 通知 ProxyManager 重新加载配置
+                    if let Ok(Some(cfg)) = proxy_mgr.get_config(&tool) {
+                        manager_state
+                            .manager
+                            .update_config(&tool, cfg)
+                            .await
+                            .map_err(|e| e.to_string())?;
+                    }
 
                     tracing::info!(tool = %tool, "透明代理配置已自动更新");
                 }

@@ -489,6 +489,10 @@ fn main() {
         start_tool_proxy,
         stop_tool_proxy,
         get_all_proxy_status,
+        update_proxy_from_profile,
+        get_proxy_config,
+        update_proxy_config,
+        get_all_proxy_configs,
         // 会话管理命令
         get_session_list,
         delete_session,

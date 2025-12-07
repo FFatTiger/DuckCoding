@@ -9,7 +9,7 @@ use crate::utils::config::global_config_path;
 use anyhow::Result;
 use async_trait::async_trait;
 
-/// Session 配置拆分迁移（目标版本 1.3.9）
+/// Session 配置拆分迁移（目标版本 1.4.0）
 pub struct SessionConfigMigration;
 
 impl Default for SessionConfigMigration {
@@ -35,7 +35,7 @@ impl Migration for SessionConfigMigration {
     }
 
     fn target_version(&self) -> &str {
-        "1.3.8"
+        "1.4.0"
     }
 
     async fn execute(&self) -> Result<MigrationResult> {
