@@ -412,89 +412,130 @@ export function AddInstanceDialog({ open, onClose, onAdd }: AddInstanceDialogPro
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* 选择工具 - 卡片式 */}
-          <div className="space-y-3">
-            <Label className="text-base font-semibold">选择工具</Label>
-            <div className="grid grid-cols-3 gap-3">
-              {TOOLS.map((tool) => (
-                <button
-                  key={tool.id}
-                  type="button"
-                  onClick={() => setBaseId(tool.id)}
-                  className={cn(
-                    'relative flex items-center justify-center py-2 px-3 rounded-lg border-2 transition-all hover:border-primary/50',
-                    baseId === tool.id ? 'border-primary bg-primary/5' : 'border-border',
-                  )}
-                >
-                  {baseId === tool.id && (
-                    <CheckCircle2 className="absolute top-1 right-1 h-3 w-3 text-primary" />
-                  )}
-                  <span className="text-sm font-medium">{tool.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 选择环境类型 - 卡片式 */}
-          <div className="space-y-3">
-            <Label className="text-base font-semibold">环境类型</Label>
-            <div className="grid grid-cols-3 gap-3">
-              {ENV_TYPES.map((env) => (
-                <button
-                  key={env.id}
-                  type="button"
-                  onClick={() => !env.disabled && setEnvType(env.id as 'local' | 'wsl' | 'ssh')}
-                  disabled={env.disabled}
-                  className={cn(
-                    'relative flex flex-col items-center justify-center py-2 px-3 rounded-lg border-2 transition-all',
-                    env.disabled
-                      ? 'opacity-50 cursor-not-allowed'
-                      : 'hover:border-primary/50 cursor-pointer',
-                    envType === env.id && !env.disabled
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border',
-                  )}
-                >
-                  {envType === env.id && !env.disabled && (
-                    <CheckCircle2 className="absolute top-1 right-1 h-3 w-3 text-primary" />
-                  )}
-                  <span className="text-sm font-medium mb-1">{env.name}</span>
-                  <span className="text-xs text-muted-foreground text-center">
-                    {env.description}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 本地环境配置 */}
-          {envType === 'local' && (
+          {/* 第一步：选择工具、环境类型、添加方式 */}
+          {step === 1 && (
             <>
+              {/* 选择工具 */}
               <div className="space-y-3">
-                <Label className="text-base font-semibold">添加方式</Label>
-                <div className="grid grid-cols-2 gap-3">
-                  {LOCAL_METHODS.map((method) => (
+                <Label className="text-base font-semibold">选择工具</Label>
+                <div className="grid grid-cols-3 gap-3">
+                  {TOOLS.map((tool) => (
                     <button
-                      key={method.id}
+                      key={tool.id}
                       type="button"
-                      onClick={() => setLocalMethod(method.id as 'auto' | 'manual')}
+                      onClick={() => setBaseId(tool.id)}
                       className={cn(
-                        'relative flex flex-col items-center justify-center py-2 px-3 rounded-lg border-2 transition-all hover:border-primary/50',
-                        localMethod === method.id ? 'border-primary bg-primary/5' : 'border-border',
+                        'relative flex items-center justify-center py-2 px-3 rounded-lg border-2 transition-all hover:border-primary/50',
+                        baseId === tool.id ? 'border-primary bg-primary/5' : 'border-border',
                       )}
                     >
-                      {localMethod === method.id && (
+                      {baseId === tool.id && (
                         <CheckCircle2 className="absolute top-1 right-1 h-3 w-3 text-primary" />
                       )}
-                      <span className="text-sm font-medium mb-1">{method.name}</span>
+                      <span className="text-sm font-medium">{tool.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 选择环境类型 */}
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">环境类型</Label>
+                <div className="grid grid-cols-3 gap-3">
+                  {ENV_TYPES.map((env) => (
+                    <button
+                      key={env.id}
+                      type="button"
+                      onClick={() => !env.disabled && setEnvType(env.id as 'local' | 'wsl' | 'ssh')}
+                      disabled={env.disabled}
+                      className={cn(
+                        'relative flex flex-col items-center justify-center py-2 px-3 rounded-lg border-2 transition-all',
+                        env.disabled
+                          ? 'opacity-50 cursor-not-allowed'
+                          : 'hover:border-primary/50 cursor-pointer',
+                        envType === env.id && !env.disabled
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border',
+                      )}
+                    >
+                      {envType === env.id && !env.disabled && (
+                        <CheckCircle2 className="absolute top-1 right-1 h-3 w-3 text-primary" />
+                      )}
+                      <span className="text-sm font-medium mb-1">{env.name}</span>
                       <span className="text-xs text-muted-foreground text-center">
-                        {method.description}
+                        {env.description}
                       </span>
                     </button>
                   ))}
                 </div>
               </div>
 
+              {/* 本地环境：选择添加方式 */}
+              {envType === 'local' && (
+                <div className="space-y-3">
+                  <Label className="text-base font-semibold">添加方式</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {LOCAL_METHODS.map((method) => (
+                      <button
+                        key={method.id}
+                        type="button"
+                        onClick={() => setLocalMethod(method.id as 'auto' | 'manual')}
+                        className={cn(
+                          'relative flex flex-col items-center justify-center py-2 px-3 rounded-lg border-2 transition-all hover:border-primary/50',
+                          localMethod === method.id
+                            ? 'border-primary bg-primary/5'
+                            : 'border-border',
+                        )}
+                      >
+                        {localMethod === method.id && (
+                          <CheckCircle2 className="absolute top-1 right-1 h-3 w-3 text-primary" />
+                        )}
+                        <span className="text-sm font-medium mb-1">{method.name}</span>
+                        <span className="text-xs text-muted-foreground text-center">
+                          {method.description}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* WSL 发行版选择 */}
+              {envType === 'wsl' && (
+                <div className="space-y-2">
+                  <Label>选择WSL发行版</Label>
+                  {loadingDistros ? (
+                    <div className="rounded border p-3 bg-muted/50 text-sm text-center">
+                      加载中...
+                    </div>
+                  ) : wslDistros.length === 0 ? (
+                    <div className="rounded border p-3 bg-yellow-50 dark:bg-yellow-950/30">
+                      <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                        未检测到WSL发行版，请先安装WSL
+                      </p>
+                    </div>
+                  ) : (
+                    <Select value={selectedDistro} onValueChange={setSelectedDistro}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="选择发行版" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {wslDistros.map((distro) => (
+                          <SelectItem key={distro} value={distro}>
+                            {distro}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* 第二步：配置详情/扫描 */}
+          {step === 2 && envType === 'local' && (
+            <>
               {localMethod === 'auto' && (
                 <>
                   <Alert>
@@ -703,7 +744,7 @@ export function AddInstanceDialog({ open, onClose, onAdd }: AddInstanceDialogPro
           )}
 
           {/* WSL发行版选择 */}
-          {envType === 'wsl' && (
+          {step === 1 && envType === 'wsl' && (
             <div className="space-y-2">
               <Label>选择WSL发行版</Label>
               {loadingDistros ? (
@@ -747,28 +788,38 @@ export function AddInstanceDialog({ open, onClose, onAdd }: AddInstanceDialogPro
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={handleClose} disabled={loading || scanning}>
-            取消
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={
-              loading ||
-              scanning ||
-              envType === 'ssh' ||
-              (envType === 'wsl' && !selectedDistro) ||
-              (envType === 'local' && (!scanResult || !scanResult.installed))
-            }
-          >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                添加中...
-              </>
-            ) : (
-              '添加'
-            )}
-          </Button>
+          {step === 1 ? (
+            <>
+              <Button variant="outline" onClick={handleClose}>
+                取消
+              </Button>
+              <Button onClick={handleNext}>下一步</Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" onClick={handleBack} disabled={loading || scanning}>
+                上一步
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={
+                  loading ||
+                  scanning ||
+                  envType === 'ssh' ||
+                  (envType === 'local' && (!scanResult || !scanResult.installed))
+                }
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    添加中...
+                  </>
+                ) : (
+                  '添加'
+                )}
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
