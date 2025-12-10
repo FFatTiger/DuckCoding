@@ -131,6 +131,27 @@ export function AddInstanceDialog({ open, onClose, onAdd }: AddInstanceDialogPro
     setInstallerCandidates([]);
   }, [baseId, envType, localMethod]);
 
+  // 对话框打开时重置所有状态
+  useEffect(() => {
+    if (open) {
+      setStep(1);
+      setBaseId('claude-code');
+      setEnvType('local');
+      setLocalMethod('auto');
+      setManualPath('');
+      setInstallMethod('npm');
+      setInstallerPath('');
+      setInstallerCandidates([]);
+      setToolCandidates([]);
+      setSelectedToolCandidate(null);
+      setShowCustomInstaller(false);
+      setValidating(false);
+      setValidationError(null);
+      setScanResult(null);
+      // selectedDistro 不重置，因为可能从第一个 useEffect 设置
+    }
+  }, [open]);
+
   const getCommonPaths = () => {
     const isWindows = navigator.platform.toLowerCase().includes('win');
     if (isWindows) {
@@ -438,6 +459,8 @@ export function AddInstanceDialog({ open, onClose, onAdd }: AddInstanceDialogPro
       setInstallerCandidates([]);
       setToolCandidates([]);
       setSelectedToolCandidate(null);
+      setShowCustomInstaller(false);
+      setValidating(false);
       setValidationError(null);
       setSelectedDistro('');
       setScanResult(null);
@@ -698,6 +721,7 @@ export function AddInstanceDialog({ open, onClose, onAdd }: AddInstanceDialogPro
                     </AlertDescription>
                   </Alert>
 
+                  {/* 工具路径输入 */}
                   <div className="space-y-2">
                     <Label>可执行文件路径</Label>
                     <div className="flex gap-2">
@@ -706,7 +730,9 @@ export function AddInstanceDialog({ open, onClose, onAdd }: AddInstanceDialogPro
                         onChange={(e) => {
                           setManualPath(e.target.value);
                           setValidationError(null);
-                          setScanResult(null); // 清除扫描结果
+                          setScanResult(null);
+                          setInstallerCandidates([]);
+                          setShowCustomInstaller(false);
                         }}
                         onBlur={() => {
                           if (manualPath) handleValidate(manualPath);
@@ -735,46 +761,51 @@ export function AddInstanceDialog({ open, onClose, onAdd }: AddInstanceDialogPro
                         <AlertDescription>{validationError}</AlertDescription>
                       </Alert>
                     )}
-                  </div>
 
-                  {/* 安装器类型选择 */}
-                  <div className="space-y-3">
-                    <Label className="text-base font-semibold">安装器类型</Label>
-                    <div className="grid grid-cols-4 gap-2">
-                      {INSTALL_METHODS.map((method) => (
-                        <button
-                          key={method.id}
-                          type="button"
-                          onClick={() =>
-                            setInstallMethod(method.id as 'npm' | 'brew' | 'official' | 'other')
-                          }
-                          className={cn(
-                            'relative flex flex-col items-center justify-center py-2 px-2 rounded-lg border-2 transition-all hover:border-primary/50',
-                            installMethod === method.id
-                              ? 'border-primary bg-primary/5'
-                              : 'border-border',
-                          )}
-                        >
-                          {installMethod === method.id && (
-                            <CheckCircle2 className="absolute top-1 right-1 h-3 w-3 text-primary" />
-                          )}
-                          <span className="text-xs font-medium mb-0.5">{method.name}</span>
-                          <span className="text-[10px] text-muted-foreground text-center leading-tight">
-                            {method.description}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 安装器路径（非 other 时显示） */}
-                  {installMethod !== 'other' && (
-                    <div className="space-y-2">
-                      <Label>安装器路径（用于更新工具）</Label>
-
-                      {/* 如果扫描到候选，显示选择列表 */}
-                      {installerCandidates.length > 0 ? (
+                    {/* 验证路径按钮 */}
+                    <Button
+                      onClick={handleScan}
+                      disabled={scanning || !manualPath || !!validationError}
+                      className="w-full"
+                      variant="outline"
+                    >
+                      {scanning ? (
                         <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          验证并扫描安装器...
+                        </>
+                      ) : (
+                        '验证路径'
+                      )}
+                    </Button>
+
+                    {/* 验证成功提示 */}
+                    {scanResult && scanResult.installed && (
+                      <Alert>
+                        <InfoIcon className="h-4 w-4" />
+                        <AlertDescription>
+                          ✓ 验证成功：{toolNames[baseId]} v{scanResult.version}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
+
+                  {/* 安装器配置（验证成功后显示） */}
+                  {scanResult && scanResult.installed && (
+                    <>
+                      {/* 情况A：扫描到安装器且未点击自定义 - 显示下拉选择 */}
+                      {installerCandidates.length > 0 && !showCustomInstaller ? (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Label>安装器路径</Label>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowCustomInstaller(true)}
+                            >
+                              自定义
+                            </Button>
+                          </div>
                           <Select value={installerPath} onValueChange={setInstallerPath}>
                             <SelectTrigger>
                               <SelectValue placeholder="选择安装器" />
@@ -789,82 +820,89 @@ export function AddInstanceDialog({ open, onClose, onAdd }: AddInstanceDialogPro
                             </SelectContent>
                           </Select>
                           <p className="text-xs text-muted-foreground">
-                            已自动扫描到 {installerCandidates.length} 个安装器，可切换或手动输入
+                            已自动扫描到 {installerCandidates.length}{' '}
+                            个安装器，点击「自定义」可手动配置
                           </p>
-                        </>
+                        </div>
                       ) : (
+                        /* 情况B：点击自定义 或 没扫描到 - 显示安装器类型和路径输入 */
                         <>
-                          <div className="flex gap-2">
-                            <Input
-                              value={installerPath}
-                              onChange={(e) => setInstallerPath(e.target.value)}
-                              placeholder={`如: ${navigator.platform.toLowerCase().includes('win') ? 'C:\\Program Files\\nodejs\\npm.cmd' : '/usr/local/bin/npm'}`}
-                              disabled={loading || scanning}
-                            />
-                            <Button
-                              onClick={handleBrowseInstaller}
-                              variant="outline"
-                              disabled={loading || scanning}
-                            >
-                              浏览...
-                            </Button>
+                          <div className="space-y-3">
+                            <Label className="text-base font-semibold">安装器类型</Label>
+                            <div className="grid grid-cols-4 gap-2">
+                              {INSTALL_METHODS.map((method) => (
+                                <button
+                                  key={method.id}
+                                  type="button"
+                                  onClick={() =>
+                                    setInstallMethod(
+                                      method.id as 'npm' | 'brew' | 'official' | 'other',
+                                    )
+                                  }
+                                  className={cn(
+                                    'relative flex flex-col items-center justify-center py-2 px-2 rounded-lg border-2 transition-all hover:border-primary/50',
+                                    installMethod === method.id
+                                      ? 'border-primary bg-primary/5'
+                                      : 'border-border',
+                                  )}
+                                >
+                                  {installMethod === method.id && (
+                                    <CheckCircle2 className="absolute top-1 right-1 h-3 w-3 text-primary" />
+                                  )}
+                                  <span className="text-xs font-medium mb-0.5">{method.name}</span>
+                                  <span className="text-[10px] text-muted-foreground text-center leading-tight">
+                                    {method.description}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                          <p className="text-xs text-muted-foreground">
-                            未检测到安装器，请手动选择或留空（无法快捷更新）
-                          </p>
-                        </>
-                      )}
-                    </div>
-                  )}
 
-                  {/* Other 类型警告 */}
-                  {installMethod === 'other' && (
-                    <Alert
-                      variant="default"
-                      className="border-yellow-500 bg-yellow-50 dark:bg-yellow-950/30"
-                    >
-                      <InfoIcon className="h-4 w-4 text-yellow-600" />
-                      <AlertDescription className="text-yellow-800 dark:text-yellow-200">
-                        <strong>「其他」类型不支持 APP 内快捷更新</strong>
-                        <br />
-                        您需要手动更新此工具
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                  {/* 验证路径按钮 */}
-                  <div>
-                    <Button
-                      onClick={handleScan}
-                      disabled={scanning || !manualPath || !!validationError}
-                      className="w-full"
-                      variant="outline"
-                    >
-                      {scanning ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          验证中...
-                        </>
-                      ) : (
-                        '验证路径'
-                      )}
-                    </Button>
-
-                    {scanResult && (
-                      <Alert variant={scanResult.installed ? 'default' : 'destructive'}>
-                        <InfoIcon className="h-4 w-4" />
-                        <AlertDescription>
-                          {scanResult.installed ? (
-                            <>
-                              ✓ 验证成功：{toolNames[baseId]} v{scanResult.version}
-                            </>
-                          ) : (
-                            <>验证失败</>
+                          {/* 安装器路径输入（非 other 时显示） */}
+                          {installMethod !== 'other' && (
+                            <div className="space-y-2">
+                              <Label>安装器路径（用于更新工具）</Label>
+                              <div className="flex gap-2">
+                                <Input
+                                  value={installerPath}
+                                  onChange={(e) => setInstallerPath(e.target.value)}
+                                  placeholder={`如: ${navigator.platform.toLowerCase().includes('win') ? 'C:\\Program Files\\nodejs\\npm.cmd' : '/usr/local/bin/npm'}`}
+                                  disabled={loading || scanning}
+                                />
+                                <Button
+                                  onClick={handleBrowseInstaller}
+                                  variant="outline"
+                                  disabled={loading || scanning}
+                                >
+                                  浏览...
+                                </Button>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                {installerCandidates.length === 0
+                                  ? '未检测到安装器，请手动选择或留空（无法快捷更新）'
+                                  : '手动指定安装器路径'}
+                              </p>
+                            </div>
                           )}
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                  </div>
+
+                          {/* Other 类型警告 */}
+                          {installMethod === 'other' && (
+                            <Alert
+                              variant="default"
+                              className="border-yellow-500 bg-yellow-50 dark:bg-yellow-950/30"
+                            >
+                              <InfoIcon className="h-4 w-4 text-yellow-600" />
+                              <AlertDescription className="text-yellow-800 dark:text-yellow-200">
+                                <strong>「其他」类型不支持 APP 内快捷更新</strong>
+                                <br />
+                                您需要手动更新此工具
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                        </>
+                      )}
+                    </>
+                  )}
                 </>
               )}
             </>
