@@ -223,11 +223,20 @@ pub trait ToolDetector: Send + Sync {
         })
     }
 
-    /// 默认版本号提取逻辑（正则匹配）
+    /// 默认版本号提取逻辑
     ///
-    /// 匹配格式：v1.2.3 或 1.2.3-beta.1
+    /// 使用统一的版本解析工具，支持多种格式：
+    /// - 标准格式：v1.2.3 或 1.2.3-beta.1
+    /// - 括号格式：2.0.61 (Claude Code)
+    /// - 空格分隔：codex-cli 0.65.0
     fn extract_version_default(&self, output: &str) -> Option<String> {
-        let re = regex::Regex::new(r"v?(\d+\.\d+\.\d+(?:-[\w.]+)?)").ok()?;
-        re.captures(output)?.get(1).map(|m| m.as_str().to_string())
+        let version = crate::utils::version::parse_version_string(output);
+        // parse_version_string 总是返回 String，空字符串或纯空白视为无效
+        let trimmed = version.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(version)
+        }
     }
 }

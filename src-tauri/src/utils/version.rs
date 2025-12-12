@@ -3,6 +3,7 @@
 /// 提供统一的版本号解析逻辑，支持多种常见格式
 use once_cell::sync::Lazy;
 use regex::Regex;
+use semver::Version;
 
 /// 版本号正则表达式（支持语义化版本）
 static VERSION_REGEX: Lazy<Regex> =
@@ -66,6 +67,31 @@ pub fn parse_version_string(raw: &str) -> String {
     trimmed.trim_start_matches('v').to_string()
 }
 
+/// 解析版本号为 semver::Version 对象（用于版本比较）
+///
+/// 内部调用 `parse_version_string()` 提取版本字符串，
+/// 然后使用 semver 库解析为强类型对象。
+///
+/// # 用途
+/// - 版本比较（如判断是否需要更新）
+/// - 版本排序
+/// - 版本约束检查
+///
+/// # Examples
+///
+/// ```
+/// use duckcoding::utils::version::parse_version;
+///
+/// assert!(parse_version("1.0.0").is_some());
+/// assert!(parse_version("v2.0.5").is_some());
+/// assert!(parse_version("codex-cli 0.65.0").is_some());
+/// assert!(parse_version("2.0.61 (Claude Code)").is_some());
+/// ```
+pub fn parse_version(raw: &str) -> Option<Version> {
+    let version_str = parse_version_string(raw);
+    Version::parse(&version_str).ok()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -105,6 +131,50 @@ mod tests {
         assert_eq!(
             parse_version_string("v1.2.3-alpha.4 (test build)"),
             "1.2.3-alpha.4"
+        );
+    }
+
+    #[test]
+    fn test_parse_version_semver() {
+        use semver::Version as SemverVersion;
+
+        // 标准格式
+        assert_eq!(parse_version("1.2.3").unwrap(), SemverVersion::new(1, 2, 3));
+
+        // v 前缀
+        assert_eq!(
+            parse_version("v2.0.5").unwrap(),
+            SemverVersion::new(2, 0, 5)
+        );
+
+        // 预发布版本
+        assert_eq!(
+            parse_version("1.2.3-beta.1").unwrap(),
+            SemverVersion::parse("1.2.3-beta.1").unwrap()
+        );
+
+        // 括号格式
+        assert_eq!(
+            parse_version("2.0.61 (Claude Code)").unwrap(),
+            SemverVersion::new(2, 0, 61)
+        );
+
+        // 空格分隔格式
+        assert_eq!(
+            parse_version("codex-cli 0.65.0").unwrap(),
+            SemverVersion::new(0, 65, 0)
+        );
+
+        // 复杂格式
+        assert_eq!(
+            parse_version("rust-v0.55.0").unwrap(),
+            SemverVersion::new(0, 55, 0)
+        );
+
+        // 预发布版本（带 v 前缀）
+        assert_eq!(
+            parse_version("v0.13.0-preview.2").unwrap(),
+            SemverVersion::parse("0.13.0-preview.2").unwrap()
         );
     }
 }

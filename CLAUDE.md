@@ -135,6 +135,18 @@ last-updated: 2025-12-07
     - 重复代码消除：版本解析、命令执行、数据库访问统一化，消除 ~280 行重复代码
     - 测试覆盖：新增 11 个单元测试（version.rs: 6个，registry.rs: 5个，installer.rs: 3个）
     - 废弃代码清理：删除 `update_tool` 命令（72行），移除 main.rs 中的引用
+  - **版本解析统一架构（2025-12-12）**：
+    - **单一数据源**：所有版本解析逻辑统一到 `utils/version.rs` 模块
+    - **两个公共方法**：
+      - `parse_version_string(raw: &str) -> String`：提取版本字符串，支持复杂格式（括号、空格分隔、v 前缀）
+      - `parse_version(raw: &str) -> Option<semver::Version>`：解析为强类型 semver 对象，用于版本比较
+    - **格式支持**：`2.0.61`、`v1.2.3`、`2.0.61 (Claude Code)`、`codex-cli 0.65.0`、`1.2.3-beta.1`、`rust-v0.55.0` 等
+    - **调用者统一**：
+      - `VersionService::parse_version()` → 调用 `utils::parse_version()`（删除内部正则逻辑）
+      - `Detector::extract_version_default()` → 调用 `utils::parse_version_string()`（删除内部正则逻辑）
+      - `registry.rs`、`installer.rs`、`detection.rs` 已使用 `utils::parse_version_string()`（保持不变）
+    - **测试覆盖**：7 个测试函数（6 个字符串提取测试 + 1 个 semver 解析测试，7 个断言），覆盖所有格式
+    - **代码减少**：删除 `VersionService` 和 `Detector` 中的重复正则定义（约 15 行）
 - **透明代理已重构为多工具架构**：
   - `ProxyManager` 统一管理三个工具（Claude Code、Codex、Gemini CLI）的代理实例
   - `HeadersProcessor` trait 定义工具特定的 headers 处理逻辑（位于 `services/proxy/headers/`）

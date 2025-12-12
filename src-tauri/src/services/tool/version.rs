@@ -2,8 +2,6 @@ use crate::models::Tool;
 use crate::services::tool::DetectorRegistry;
 use crate::utils::CommandExecutor;
 use anyhow::Result;
-use once_cell::sync::Lazy;
-use regex::Regex;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 
@@ -199,17 +197,9 @@ impl VersionService {
         }
     }
 
-    /// 解析版本号为可比较的元组
+    /// 解析版本号为可比较的 semver::Version 对象
     fn parse_version(version: &str) -> Option<Version> {
-        static VERSION_REGEX: Lazy<Regex> = Lazy::new(|| {
-            Regex::new(r"(\d+\.\d+\.\d+(?:-[0-9A-Za-z\.-]+)?)").expect("invalid version regex")
-        });
-
-        let trimmed = version.trim();
-        let captures = VERSION_REGEX.captures(trimmed)?;
-        let matched = captures.get(1)?.as_str();
-
-        Version::parse(matched).ok()
+        crate::utils::version::parse_version(version)
     }
 
     /// 批量从镜像站获取所有工具版本（优化：一次请求）
