@@ -21,9 +21,16 @@ pub mod codex;
 pub mod gemini;
 pub mod types;
 pub mod utils;
+pub mod watcher;
 
 // 重导出类型
 pub use types::*;
+
+// 重导出常用 watcher 函数
+pub use watcher::{
+    acknowledge_external_change, detect_external_changes, import_external_change,
+    mark_external_change, ConfigWatcher, NotifyWatcherManager, EXTERNAL_CHANGE_EVENT,
+};
 
 /// 统一的工具配置管理接口
 ///

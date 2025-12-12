@@ -1,4 +1,4 @@
-use duckcoding::services::config_watcher::NotifyWatcherManager;
+use duckcoding::services::config::NotifyWatcherManager;
 use duckcoding::utils::config::{read_global_config, write_global_config};
 use tauri::AppHandle;
 use tracing::{debug, error, warn};
