@@ -47,9 +47,20 @@ impl PlatformInfo {
         }
     }
 
-    /// 构建增强的 PATH 环境变量
+    /// 构建增强的 PATH 环境变量（合并模式：增强路径 + 当前 PATH）
+    ///
+    /// 策略：在当前 PATH 前追加工具常见路径，保留所有现有环境
+    /// - 增强路径包含：Homebrew、npm global、nvm、用户 bin 等
+    /// - 当前 PATH：继承系统/shell 的完整 PATH
+    ///
+    /// 示例（macOS）：
+    /// ```
+    /// /Users/user/.nvm/current/bin:/opt/homebrew/bin:/usr/local/bin:$PATH
+    /// ```
     pub fn build_enhanced_path(&self) -> String {
         let separator = self.path_separator();
+
+        // 实时获取当前 PATH（而非缓存），确保获得最新环境
         let current_path = env::var("PATH").unwrap_or_default();
 
         let system_paths = if self.is_windows {
@@ -58,6 +69,7 @@ impl PlatformInfo {
             self.unix_system_paths()
         };
 
+        // 合并策略：增强路径在前（高优先级），当前 PATH 在后（保留完整环境）
         format!(
             "{}{}{}",
             system_paths.join(separator),
@@ -103,24 +115,61 @@ impl PlatformInfo {
             paths.insert(0, format!("{home_str}/.claude/bin"));
             paths.insert(0, format!("{home_str}/.claude/local"));
 
-            // NVM 支持 - 优先使用当前激活的版本
+            // NVM 支持 - 增强检测逻辑（2025-12-11）
+            // 策略：优先使用环境变量，然后尝试常见路径
+            let mut nvm_detected = false;
+
             if let Ok(nvm_dir) = std::env::var("NVM_DIR") {
                 // 检查 nvm current symlink
                 let nvm_current = format!("{nvm_dir}/current/bin");
                 if std::path::Path::new(&nvm_current).exists() {
                     paths.insert(0, nvm_current);
+                    nvm_detected = true;
                 } else {
                     // 如果没有 current symlink，尝试使用 default
                     let nvm_default = format!("{home_str}/.nvm/versions/node/default/bin");
                     if std::path::Path::new(&nvm_default).exists() {
                         paths.insert(0, nvm_default);
+                        nvm_detected = true;
                     }
                 }
-            } else {
-                // 如果 NVM_DIR 未设置，尝试默认路径
-                let nvm_current = format!("{home_str}/.nvm/current/bin");
-                if std::path::Path::new(&nvm_current).exists() {
-                    paths.insert(0, nvm_current);
+            }
+
+            // 即使没有 NVM_DIR 环境变量，也尝试常见的 nvm 路径（GUI 应用修复）
+            if !nvm_detected {
+                let fallback_nvm_paths = vec![
+                    format!("{home_str}/.nvm/current/bin"),
+                    format!("{home_str}/.nvm/versions/node/default/bin"),
+                ];
+
+                for nvm_path in fallback_nvm_paths {
+                    if std::path::Path::new(&nvm_path).exists() {
+                        paths.insert(0, nvm_path);
+                        nvm_detected = true;
+                        break;
+                    }
+                }
+            }
+
+            // 扫描 nvm 所有已安装版本，选择最新的（最后的兜底）
+            if !nvm_detected {
+                if let Ok(entries) = std::fs::read_dir(format!("{home_str}/.nvm/versions/node")) {
+                    let mut versions: Vec<String> = entries
+                        .filter_map(|e| e.ok())
+                        .filter(|e| e.path().is_dir())
+                        .filter_map(|e| e.file_name().to_str().map(|s| s.to_string()))
+                        .collect();
+
+                    // 简单排序（字母序，v20 > v18）
+                    versions.sort();
+                    if let Some(latest_version) = versions.last() {
+                        let latest_bin =
+                            format!("{home_str}/.nvm/versions/node/{latest_version}/bin");
+                        if std::path::Path::new(&latest_bin).exists() {
+                            paths.insert(0, latest_bin);
+                            // nvm 路径已添加
+                        }
+                    }
                 }
             }
 
@@ -130,6 +179,23 @@ impl PlatformInfo {
             } else {
                 // 默认 npm global bin 路径
                 paths.push(format!("{home_str}/.npm-global/bin"));
+            }
+
+            // asdf 支持（2025-12-11 新增）
+            // asdf 是另一个流行的版本管理器
+            let asdf_dir =
+                std::env::var("ASDF_DIR").unwrap_or_else(|_| format!("{home_str}/.asdf"));
+            let asdf_shims = format!("{asdf_dir}/shims");
+            if std::path::Path::new(&asdf_shims).exists() {
+                paths.insert(0, asdf_shims);
+            }
+
+            // Volta 支持（2025-12-11 新增）
+            let volta_home =
+                std::env::var("VOLTA_HOME").unwrap_or_else(|_| format!("{home_str}/.volta"));
+            let volta_bin = format!("{volta_home}/bin");
+            if std::path::Path::new(&volta_bin).exists() {
+                paths.insert(0, volta_bin);
             }
         }
 
