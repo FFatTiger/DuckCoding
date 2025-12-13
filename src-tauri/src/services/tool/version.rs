@@ -2,8 +2,6 @@ use crate::models::Tool;
 use crate::services::tool::DetectorRegistry;
 use crate::utils::CommandExecutor;
 use anyhow::Result;
-use once_cell::sync::Lazy;
-use regex::Regex;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 
@@ -68,22 +66,37 @@ pub struct VersionService {
     detector_registry: DetectorRegistry,
     command_executor: CommandExecutor,
     mirror_api_url: String,
+    #[allow(dead_code)]
+    use_local_fallback: bool, // 是否启用本地 fallback
 }
 
 impl VersionService {
     pub fn new() -> Self {
+        // 检查是否启用本地 fallback（开发/测试模式）
+        let use_local_fallback = std::env::var("DUCKCODING_USE_LOCAL_VERSIONS")
+            .ok()
+            .and_then(|v| v.parse::<bool>().ok())
+            .unwrap_or(false);
+
         VersionService {
             detector_registry: DetectorRegistry::new(),
             command_executor: CommandExecutor::new(),
             mirror_api_url: "https://mirror.duckcoding.com/api/v1/tools".to_string(),
+            use_local_fallback,
         }
     }
 
     pub fn with_mirror_url(mirror_url: String) -> Self {
+        let use_local_fallback = std::env::var("DUCKCODING_USE_LOCAL_VERSIONS")
+            .ok()
+            .and_then(|v| v.parse::<bool>().ok())
+            .unwrap_or(false);
+
         VersionService {
             detector_registry: DetectorRegistry::new(),
             command_executor: CommandExecutor::new(),
             mirror_api_url: mirror_url,
+            use_local_fallback,
         }
     }
 
@@ -184,17 +197,9 @@ impl VersionService {
         }
     }
 
-    /// 解析版本号为可比较的元组
+    /// 解析版本号为可比较的 semver::Version 对象
     fn parse_version(version: &str) -> Option<Version> {
-        static VERSION_REGEX: Lazy<Regex> = Lazy::new(|| {
-            Regex::new(r"(\d+\.\d+\.\d+(?:-[0-9A-Za-z\.-]+)?)").expect("invalid version regex")
-        });
-
-        let trimmed = version.trim();
-        let captures = VERSION_REGEX.captures(trimmed)?;
-        let matched = captures.get(1)?.as_str();
-
-        Version::parse(matched).ok()
+        crate::utils::version::parse_version(version)
     }
 
     /// 批量从镜像站获取所有工具版本（优化：一次请求）

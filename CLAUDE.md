@@ -74,9 +74,26 @@ last-updated: 2025-12-07
 - Linux 装 `libwebkit2gtk-4.1-dev`、`libjavascriptcoregtk-4.1-dev`、`patchelf` 等 Tauri v2 依赖；Windows 确保 WebView2 Runtime（先查注册表，winget 安装失败则回退微软官方静默安装包）；Node 20.19.0，Rust stable（含 clippy / rustfmt），启用 npm 与 cargo 缓存。
 - CI 未通过不得合并；缺少 dist 时会在 `npm run check` 内自动触发 `npm run build` 以满足 Clippy 输入。
 
-## 架构记忆（2025-11-29）
+## 架构记忆（2025-12-12）
 
 - `src-tauri/src/main.rs` 仅保留应用启动与托盘事件注册，所有 Tauri Commands 拆分到 `src-tauri/src/commands/*`，服务实现位于 `services/*`，核心设施放在 `core/*`（HTTP、日志、错误）。
+- **配置管理系统（2025-12-12 重构）**：
+  - `services/config/` 模块化拆分为 6 个子模块：
+    - `types.rs`：共享类型定义（`CodexSettingsPayload`、`ClaudeSettingsPayload`、`GeminiEnvPayload` 等，60行）
+    - `utils.rs`：工具函数（`merge_toml_tables` 保留 TOML 注释，85行）
+    - `claude.rs`：Claude Code 配置管理（4个公共函数，实现 `ToolConfigManager` trait，177行）
+    - `codex.rs`：Codex 配置管理（支持 config.toml + auth.json，保留 TOML 格式，204行）
+    - `gemini.rs`：Gemini CLI 配置管理（支持 settings.json + .env 环境变量，199行）
+    - `watcher.rs`：外部变更检测 + 文件监听（合并原 `config_watcher.rs`，550行）
+      - 变更检测：`detect_external_changes`、`mark_external_change`、`acknowledge_external_change`
+      - Profile 导入：`import_external_change`
+      - 文件监听：`ConfigWatcher`（轮询，跨平台）、`NotifyWatcherManager`（notify，高性能）
+      - 核心函数：`config_paths`（返回主配置 + 附属文件）、`compute_native_checksum`（SHA256 校验和）
+  - 统一接口：`ToolConfigManager` trait 定义标准的 `read_settings`、`save_settings`、`get_schema`
+  - 废弃功能：删除 `ConfigService::save_backup` 系列函数（由 `ProfileManager` 替代）
+  - 变更检测：与 `ProfileManager` 集成，自动同步激活状态的 dirty 标记和 checksum
+  - 命令层更新：`commands/config_commands.rs` 使用新模块路径（`config::claude::*`、`config::codex::*`、`config::gemini::*`）
+  - 测试状态：12 个测试（2 个轮询监听测试通过，10 个标记为 #[ignore]，需 ProfileManager 重写）
 - **工具管理系统**：
   - 多环境架构：支持本地（Local）、WSL、SSH 三种环境的工具实例管理
   - 数据模型：`ToolType`（环境类型）、`ToolInstance`（工具实例）存储在 `models/tool.rs`
@@ -99,6 +116,37 @@ last-updated: 2025-12-07
     - `ToolRegistry` 和 `InstallerService` 优先使用 Detector，未注册的工具回退到旧逻辑（向后兼容）
     - 新增工具仅需：1) 实现 ToolDetector trait，2) 注册到 DetectorRegistry，3) 添加 Tool 定义
     - 每个 Detector 文件包含完整的检测、安装、更新、配置管理逻辑，模块化且易测试
+  - **命令层模块化重构（2025-12-11）**：
+    - 原 `commands/tool_commands.rs` (1001行) 按职责拆分为 6 个模块
+    - 模块结构：
+      - `tool_commands/installation.rs` - 安装和状态查询（3个命令）
+      - `tool_commands/detection.rs` - 工具检测（3个命令）
+      - `tool_commands/validation.rs` - 路径和环境验证（2个命令）
+      - `tool_commands/update.rs` - 版本更新管理（5个命令）
+      - `tool_commands/scanner.rs` - 安装器扫描（1个命令）
+      - `tool_commands/management.rs` - 实例管理（1个命令）
+      - `tool_commands/mod.rs` - 统一导出
+    - 架构原则：严格遵守三层架构（Commands → Services → Utils），命令层仅做参数验证，业务逻辑全部在服务层
+    - 服务层增强：
+      - `ToolRegistry` 新增 7 个方法：`update_instance`、`check_update_for_instance`、`refresh_all_tool_versions`、`scan_tool_candidates`、`validate_tool_path`、`add_tool_instance`、`detect_single_tool_with_cache`
+      - `InstallerService` 新增 1 个方法：`update_instance_by_installer`
+      - `utils/version.rs` 新增模块：统一版本号解析逻辑（含 6 个单元测试）
+    - 代码质量：命令层从 1001 行减少到 548 行（-45%），平均函数从 62 行减少到 8 行（-87%）
+    - 重复代码消除：版本解析、命令执行、数据库访问统一化，消除 ~280 行重复代码
+    - 测试覆盖：新增 11 个单元测试（version.rs: 6个，registry.rs: 5个，installer.rs: 3个）
+    - 废弃代码清理：删除 `update_tool` 命令（72行），移除 main.rs 中的引用
+  - **版本解析统一架构（2025-12-12）**：
+    - **单一数据源**：所有版本解析逻辑统一到 `utils/version.rs` 模块
+    - **两个公共方法**：
+      - `parse_version_string(raw: &str) -> String`：提取版本字符串，支持复杂格式（括号、空格分隔、v 前缀）
+      - `parse_version(raw: &str) -> Option<semver::Version>`：解析为强类型 semver 对象，用于版本比较
+    - **格式支持**：`2.0.61`、`v1.2.3`、`2.0.61 (Claude Code)`、`codex-cli 0.65.0`、`1.2.3-beta.1`、`rust-v0.55.0` 等
+    - **调用者统一**：
+      - `VersionService::parse_version()` → 调用 `utils::parse_version()`（删除内部正则逻辑）
+      - `Detector::extract_version_default()` → 调用 `utils::parse_version_string()`（删除内部正则逻辑）
+      - `registry.rs`、`installer.rs`、`detection.rs` 已使用 `utils::parse_version_string()`（保持不变）
+    - **测试覆盖**：7 个测试函数（6 个字符串提取测试 + 1 个 semver 解析测试，7 个断言），覆盖所有格式
+    - **代码减少**：删除 `VersionService` 和 `Detector` 中的重复正则定义（约 15 行）
 - **透明代理已重构为多工具架构**：
   - `ProxyManager` 统一管理三个工具（Claude Code、Codex、Gemini CLI）的代理实例
   - `HeadersProcessor` trait 定义工具特定的 headers 处理逻辑（位于 `services/proxy/headers/`）

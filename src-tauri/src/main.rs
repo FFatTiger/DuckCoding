@@ -16,9 +16,9 @@ mod commands;
 use commands::*;
 
 // 导入透明代理服务
+use duckcoding::services::config::{NotifyWatcherManager, EXTERNAL_CHANGE_EVENT};
 use duckcoding::ProxyManager;
 use duckcoding::TransparentProxyService;
-use duckcoding::{services::config_watcher::NotifyWatcherManager, services::EXTERNAL_CHANGE_EVENT};
 use std::sync::Arc;
 use tokio::sync::Mutex as TokioMutex;
 
@@ -452,7 +452,6 @@ fn main() {
         check_update_for_instance,
         refresh_all_tool_versions,
         check_all_updates,
-        update_tool,
         update_tool_instance,
         validate_tool_path,
         add_manual_tool_instance,
