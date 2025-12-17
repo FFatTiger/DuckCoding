@@ -120,20 +120,21 @@ mod tests {
 
     #[test]
     fn test_create_request_processor() {
-        let claude = create_request_processor("claude-code");
+        let claude = create_request_processor("claude-code").expect("should create claude processor");
         assert_eq!(claude.tool_id(), "claude-code");
 
-        let codex = create_request_processor("codex");
+        let codex = create_request_processor("codex").expect("should create codex processor");
         assert_eq!(codex.tool_id(), "codex");
 
-        let gemini = create_request_processor("gemini-cli");
+        let gemini = create_request_processor("gemini-cli").expect("should create gemini processor");
         assert_eq!(gemini.tool_id(), "gemini-cli");
     }
 
     #[test]
-    #[should_panic(expected = "Unsupported tool")]
     fn test_create_invalid_processor() {
-        create_request_processor("invalid-tool");
+        let result = create_request_processor("invalid-tool");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("不支持的工具"));
     }
 
     #[tokio::test]
