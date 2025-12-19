@@ -28,21 +28,21 @@ pub enum ProfileInput {
 /// 列出所有 Profile 描述符
 #[tauri::command]
 pub async fn pm_list_all_profiles() -> Result<Vec<ProfileDescriptor>, String> {
-    let manager = ProfileManager::new().map_err(|e| e.to_string())?;
+    let manager = state.manager.read().await;
     manager.list_all_descriptors().map_err(|e| e.to_string())
 }
 
 /// 列出指定工具的 Profile 名称
 #[tauri::command]
 pub async fn pm_list_tool_profiles(tool_id: String) -> Result<Vec<String>, String> {
-    let manager = ProfileManager::new().map_err(|e| e.to_string())?;
+    let manager = state.manager.read().await;
     manager.list_profiles(&tool_id).map_err(|e| e.to_string())
 }
 
 /// 获取指定 Profile（返回 JSON 供前端使用）
 #[tauri::command]
 pub async fn pm_get_profile(tool_id: String, name: String) -> Result<serde_json::Value, String> {
-    let manager = ProfileManager::new().map_err(|e| e.to_string())?;
+    let manager = state.manager.read().await;
 
     let value = match tool_id.as_str() {
         "claude-code" => {
@@ -72,7 +72,7 @@ pub async fn pm_get_profile(tool_id: String, name: String) -> Result<serde_json:
 /// 获取当前激活的 Profile（返回 JSON 供前端使用）
 #[tauri::command]
 pub async fn pm_get_active_profile(tool_id: String) -> Result<Option<serde_json::Value>, String> {
-    let manager = ProfileManager::new().map_err(|e| e.to_string())?;
+    let manager = state.manager.read().await;
     let name = manager
         .get_active_profile_name(&tool_id)
         .map_err(|e| e.to_string())?;
@@ -87,11 +87,12 @@ pub async fn pm_get_active_profile(tool_id: String) -> Result<Option<serde_json:
 /// 保存 Profile（创建或更新）
 #[tauri::command]
 pub async fn pm_save_profile(
+    state: tauri::State<'_, ProfileManagerState>,
     tool_id: String,
     name: String,
     input: ProfileInput,
 ) -> Result<(), String> {
-    let manager = ProfileManager::new().map_err(|e| e.to_string())?;
+    let manager = state.manager.write().await;  // 写锁
 
     match tool_id.as_str() {
         "claude-code" => {
@@ -133,7 +134,7 @@ pub async fn pm_save_profile(
 /// 删除 Profile
 #[tauri::command]
 pub async fn pm_delete_profile(tool_id: String, name: String) -> Result<(), String> {
-    let manager = ProfileManager::new().map_err(|e| e.to_string())?;
+    let manager = state.manager.read().await;
     manager
         .delete_profile(&tool_id, &name)
         .map_err(|e| e.to_string())
@@ -142,7 +143,7 @@ pub async fn pm_delete_profile(tool_id: String, name: String) -> Result<(), Stri
 /// 激活 Profile
 #[tauri::command]
 pub async fn pm_activate_profile(tool_id: String, name: String) -> Result<(), String> {
-    let manager = ProfileManager::new().map_err(|e| e.to_string())?;
+    let manager = state.manager.read().await;
     manager
         .activate_profile(&tool_id, &name)
         .map_err(|e| e.to_string())
@@ -151,7 +152,7 @@ pub async fn pm_activate_profile(tool_id: String, name: String) -> Result<(), St
 /// 获取当前激活的 Profile 名称
 #[tauri::command]
 pub async fn pm_get_active_profile_name(tool_id: String) -> Result<Option<String>, String> {
-    let manager = ProfileManager::new().map_err(|e| e.to_string())?;
+    let manager = state.manager.read().await;
     manager
         .get_active_profile_name(&tool_id)
         .map_err(|e| e.to_string())
@@ -160,7 +161,7 @@ pub async fn pm_get_active_profile_name(tool_id: String) -> Result<Option<String
 /// 从原生配置文件捕获 Profile
 #[tauri::command]
 pub async fn pm_capture_from_native(tool_id: String, name: String) -> Result<(), String> {
-    let manager = ProfileManager::new().map_err(|e| e.to_string())?;
+    let manager = state.manager.read().await;
     manager
         .capture_from_native(&tool_id, &name)
         .map_err(|e| e.to_string())
