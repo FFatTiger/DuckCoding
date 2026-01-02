@@ -3,12 +3,28 @@
 
 import type { SSHConfig } from '@/types/tool-management';
 import type { ProfileData, ProfileDescriptor, ProfilePayload, ToolId } from '@/types/profile';
+import type {
+  Provider,
+  ProviderStore,
+  ToolInstanceSelection,
+  _ProviderFormData,
+  ProviderValidationResult,
+} from '@/types/provider';
 
 // 重新导出 Profile 相关类型供其他模块使用
 export type { ProfileData, ProfileDescriptor, ProfilePayload, ToolId };
 
 // 重新导出工具管理类型
 export type { SSHConfig };
+
+// 重新导出供应商管理类型
+export type {
+  Provider,
+  ProviderStore,
+  ToolInstanceSelection,
+  _ProviderFormData,
+  ProviderValidationResult,
+};
 
 export interface ToolStatus {
   mirrorIsStale: boolean;

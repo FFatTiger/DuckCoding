@@ -199,6 +199,8 @@ fn main() {
         manager: init_ctx.profile_manager,
     };
 
+    let provider_manager_state = ProviderManagerState::new();
+
     // 判断单实例模式
     let single_instance_enabled = determine_single_instance_mode();
 
@@ -214,6 +216,7 @@ fn main() {
         .manage(update_service_state)
         .manage(tool_registry_state)
         .manage(profile_manager_state)
+        .manage(provider_manager_state)
         .setup(|app| {
             setup_app_hooks(app)?;
             Ok(())
@@ -364,6 +367,14 @@ fn main() {
         pm_get_active_profile_name,
         pm_get_active_profile,
         pm_capture_from_native,
+        // 供应商管理命令（v1.5.0）
+        list_providers,
+        create_provider,
+        update_provider,
+        delete_provider,
+        get_tool_instance_selection,
+        set_tool_instance_selection,
+        validate_provider_config,
     ]);
 
     // 使用自定义事件循环处理 macOS Reopen 事件

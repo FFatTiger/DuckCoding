@@ -8,11 +8,13 @@
 // - session: 会话管理（透明代理请求追踪）
 // - migration_manager: 统一迁移管理（新）
 // - balance: 余额监控配置管理
+// - provider_manager: 供应商配置管理
 
 pub mod balance;
 pub mod config;
 pub mod migration_manager;
 pub mod profile_manager; // Profile管理（v2.1）
+pub mod provider_manager; // 供应商配置管理
 pub mod proxy;
 pub mod proxy_config_manager; // 透明代理配置管理（v2.1）
 pub mod session;
@@ -27,6 +29,7 @@ pub use profile_manager::{
     ActiveStore, ClaudeProfile, CodexProfile, GeminiProfile, ProfileDescriptor, ProfileManager,
     ProfilesStore,
 }; // Profile管理（v2.0）
+pub use provider_manager::ProviderManager;
 pub use proxy::*;
 // session 模块：明确导出避免 db 名称冲突
 pub use session::{manager::SESSION_MANAGER, models::*};

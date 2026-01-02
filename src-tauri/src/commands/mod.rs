@@ -4,6 +4,7 @@ pub mod error; // 错误处理统一模块
 pub mod log_commands;
 pub mod onboarding;
 pub mod profile_commands; // Profile 管理命令（v2.0）
+pub mod provider_commands; // 供应商管理命令（v1.5.0）
 pub mod proxy_commands;
 pub mod session_commands;
 pub mod startup_commands; // 开机自启动管理命令
@@ -21,6 +22,7 @@ pub use config_commands::*;
 pub use log_commands::*;
 pub use onboarding::*;
 pub use profile_commands::*; // Profile 管理命令（v2.0）
+pub use provider_commands::*; // 供应商管理命令（v1.5.0）
 pub use proxy_commands::*;
 pub use session_commands::*;
 pub use startup_commands::*; // 开机自启动管理命令
