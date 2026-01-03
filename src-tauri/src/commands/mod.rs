@@ -1,5 +1,6 @@
 pub mod balance_commands;
 pub mod config_commands;
+pub mod dashboard_commands; // 仪表板状态管理命令
 pub mod error; // 错误处理统一模块
 pub mod log_commands;
 pub mod onboarding;
@@ -19,6 +20,7 @@ pub mod window_commands;
 // 重新导出所有命令函数
 pub use balance_commands::*;
 pub use config_commands::*;
+pub use dashboard_commands::*; // 仪表板状态管理命令
 pub use log_commands::*;
 pub use onboarding::*;
 pub use profile_commands::*; // Profile 管理命令（v2.0）

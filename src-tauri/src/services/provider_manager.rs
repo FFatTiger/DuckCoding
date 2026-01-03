@@ -3,7 +3,7 @@
 // 供应商配置管理服务
 
 use crate::data::DataManager;
-use crate::models::provider::{Provider, ProviderStore, ToolInstanceSelection};
+use crate::models::provider::{Provider, ProviderStore};
 use crate::utils::config::config_dir;
 use anyhow::{anyhow, Result};
 use std::path::PathBuf;
@@ -130,24 +130,6 @@ impl ProviderManager {
         store.updated_at = chrono::Utc::now().timestamp();
         self.save_store(&store)?;
 
-        Ok(())
-    }
-
-    /// 获取工具实例选择
-    pub fn get_tool_instance(&self, tool_id: &str) -> Result<Option<ToolInstanceSelection>> {
-        Ok(self.load_store()?.tool_instances.get(tool_id).cloned())
-    }
-
-    /// 设置工具实例选择
-    pub fn set_tool_instance(&self, selection: ToolInstanceSelection) -> Result<()> {
-        let mut store = self.load_store()?;
-
-        store
-            .tool_instances
-            .insert(selection.tool_id.clone(), selection);
-        store.updated_at = chrono::Utc::now().timestamp();
-
-        self.save_store(&store)?;
         Ok(())
     }
 

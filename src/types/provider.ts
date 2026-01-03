@@ -27,16 +27,6 @@ export interface Provider {
 }
 
 /**
- * 工具实例选择
- */
-export interface ToolInstanceSelection {
-  /** 工具ID（"claude-code" | "codex" | "gemini-cli"） */
-  tool_id: string;
-  /** 实例唯一ID（如 "claude-code-local", "codex-wsl-Ubuntu"） */
-  instance_id: string;
-}
-
-/**
  * 供应商存储结构
  */
 export interface ProviderStore {
@@ -46,8 +36,6 @@ export interface ProviderStore {
   providers: Provider[];
   /** 当前激活的供应商ID */
   active_provider_id?: string;
-  /** 工具实例选择映射（key: tool_id, value: selection） */
-  tool_instances: Record<string, ToolInstanceSelection>;
   /** 最后更新时间（Unix timestamp） */
   updated_at: number;
 }

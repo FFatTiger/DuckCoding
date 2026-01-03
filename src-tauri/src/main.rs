@@ -201,6 +201,8 @@ fn main() {
 
     let provider_manager_state = ProviderManagerState::new();
 
+    let dashboard_manager_state = DashboardManagerState::new();
+
     // 判断单实例模式
     let single_instance_enabled = determine_single_instance_mode();
 
@@ -217,6 +219,7 @@ fn main() {
         .manage(tool_registry_state)
         .manage(profile_manager_state)
         .manage(provider_manager_state)
+        .manage(dashboard_manager_state)
         .setup(|app| {
             setup_app_hooks(app)?;
             Ok(())
@@ -372,9 +375,12 @@ fn main() {
         create_provider,
         update_provider,
         delete_provider,
+        validate_provider_config,
+        // Dashboard 管理命令
         get_tool_instance_selection,
         set_tool_instance_selection,
-        validate_provider_config,
+        get_selected_provider_id,
+        set_selected_provider_id,
     ]);
 
     // 使用自定义事件循环处理 macOS Reopen 事件

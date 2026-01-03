@@ -28,6 +28,7 @@ interface AppEventsOptions {
   onCloseRequest: () => void;
   onSingleInstance: (message: string) => void;
   onNavigateToInstall: () => void;
+  onNavigateToList: () => void;
   onNavigateToConfig: (detail?: { toolId?: string }) => void;
   onNavigateToSettings: (detail?: { tab?: string }) => void;
   onNavigateToTransparentProxy: (detail?: { toolId?: string }) => void;
@@ -40,6 +41,7 @@ export function useAppEvents(options: AppEventsOptions) {
     onCloseRequest,
     onSingleInstance,
     onNavigateToInstall,
+    onNavigateToList,
     onNavigateToConfig,
     onNavigateToSettings,
     onNavigateToTransparentProxy,
@@ -147,6 +149,7 @@ export function useAppEvents(options: AppEventsOptions) {
 
     window.addEventListener('navigate-to-install', onNavigateToInstall);
     window.addEventListener('navigate-to-config', handleNavigateToConfig);
+    window.addEventListener('navigate-to-list', onNavigateToList);
     window.addEventListener('navigate-to-settings', handleNavigateToSettings);
     window.addEventListener('navigate-to-transparent-proxy', handleNavigateToTransparentProxy);
     window.addEventListener('refresh-tools', onRefreshTools);
@@ -154,6 +157,7 @@ export function useAppEvents(options: AppEventsOptions) {
     return () => {
       window.removeEventListener('navigate-to-install', onNavigateToInstall);
       window.removeEventListener('navigate-to-config', handleNavigateToConfig);
+      window.removeEventListener('navigate-to-list', onNavigateToList);
       window.removeEventListener('navigate-to-settings', handleNavigateToSettings);
       window.removeEventListener('navigate-to-transparent-proxy', handleNavigateToTransparentProxy);
       window.removeEventListener('refresh-tools', onRefreshTools);

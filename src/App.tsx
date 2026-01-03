@@ -311,8 +311,9 @@ function App() {
       });
     },
     onNavigateToInstall: () => setActiveTab('install'),
+    onNavigateToList: () => setActiveTab('tool-management'),
     onNavigateToConfig: (_detail) => {
-      setActiveTab('tool-management');
+      setActiveTab('profile-management');
       // TODO: 如果需要滚动到指定工具,可以通过 _detail.toolId 实现
     },
     onNavigateToSettings: (detail) => {

@@ -3,7 +3,6 @@
 // 供应商配置数据模型
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 /// 供应商配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -28,15 +27,6 @@ pub struct Provider {
     pub updated_at: i64,
 }
 
-/// 工具实例选择记录
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ToolInstanceSelection {
-    /// 工具ID ("claude-code" | "codex" | "gemini-cli")
-    pub tool_id: String,
-    /// 实例唯一ID（如 "claude-code-local", "codex-wsl-Ubuntu"）
-    pub instance_id: String,
-}
-
 /// 供应商存储结构
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProviderStore {
@@ -44,8 +34,6 @@ pub struct ProviderStore {
     pub version: u32,
     /// 供应商列表
     pub providers: Vec<Provider>,
-    /// 工具实例选择记录
-    pub tool_instances: HashMap<String, ToolInstanceSelection>,
     /// 最后更新时间
     pub updated_at: i64,
 }
@@ -66,7 +54,6 @@ impl Default for ProviderStore {
                 created_at: now,
                 updated_at: now,
             }],
-            tool_instances: HashMap::new(),
             updated_at: now,
         }
     }
@@ -84,7 +71,6 @@ mod tests {
         assert_eq!(store.providers[0].id, "duckcoding");
         assert_eq!(store.providers[0].name, "DuckCoding");
         assert!(store.providers[0].is_default);
-        assert!(store.tool_instances.is_empty());
     }
 
     #[test]
@@ -107,19 +93,5 @@ mod tests {
         assert_eq!(deserialized.id, provider.id);
         assert_eq!(deserialized.name, provider.name);
         assert_eq!(deserialized.username, provider.username);
-    }
-
-    #[test]
-    fn test_tool_instance_selection() {
-        let selection = ToolInstanceSelection {
-            tool_id: "claude-code".to_string(),
-            instance_id: "claude-code-local".to_string(),
-        };
-
-        let json = serde_json::to_string(&selection).unwrap();
-        let deserialized: ToolInstanceSelection = serde_json::from_str(&json).unwrap();
-
-        assert_eq!(deserialized.tool_id, "claude-code");
-        assert_eq!(deserialized.instance_id, "claude-code-local");
     }
 }

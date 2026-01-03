@@ -3,20 +3,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   listProviders,
+  type Provider,
+  getToolInstances,
   getToolInstanceSelection,
   setToolInstanceSelection,
-  getToolInstances,
-  type Provider,
-  type ToolInstanceSelection,
 } from '@/lib/tauri-commands';
 import type { ToolInstance } from '@/types/tool-management';
 
 export function useDashboardProviders() {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [loading, setLoading] = useState(false);
-  const [instanceSelections, setInstanceSelections] = useState<
-    Record<string, ToolInstanceSelection>
-  >({});
+  // 存储每个工具的选中实例ID（key: tool_id, value: instance_id）
+  const [instanceSelections, setInstanceSelections] = useState<Record<string, string>>({});
   // 所有工具实例（按工具ID分组）
   const [toolInstances, setToolInstances] = useState<Record<string, ToolInstance[]>>({});
 
@@ -52,11 +50,11 @@ export function useDashboardProviders() {
    */
   const loadInstanceSelection = useCallback(async (toolId: string) => {
     try {
-      const selection = await getToolInstanceSelection(toolId);
-      if (selection) {
+      const instanceId = await getToolInstanceSelection(toolId);
+      if (instanceId) {
         setInstanceSelections((prev) => ({
           ...prev,
-          [toolId]: selection,
+          [toolId]: instanceId,
         }));
       }
     } catch (error) {
@@ -67,12 +65,12 @@ export function useDashboardProviders() {
   /**
    * 更新工具的实例选择
    */
-  const handleSetInstanceSelection = useCallback(async (selection: ToolInstanceSelection) => {
+  const handleSetInstanceSelection = useCallback(async (toolId: string, instanceId: string) => {
     try {
-      await setToolInstanceSelection(selection);
+      await setToolInstanceSelection(toolId, instanceId);
       setInstanceSelections((prev) => ({
         ...prev,
-        [selection.tool_id]: selection,
+        [toolId]: instanceId,
       }));
       return { success: true };
     } catch (error) {

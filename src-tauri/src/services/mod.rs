@@ -12,6 +12,7 @@
 
 pub mod balance;
 pub mod config;
+pub mod dashboard_manager; // 仪表板状态管理
 pub mod migration_manager;
 pub mod profile_manager; // Profile管理（v2.1）
 pub mod provider_manager; // 供应商配置管理
@@ -24,6 +25,7 @@ pub mod update;
 // 重新导出服务
 pub use balance::*;
 pub use config::types::*; // 仅导出类型
+pub use dashboard_manager::DashboardManager;
 pub use migration_manager::{create_migration_manager, MigrationManager};
 pub use profile_manager::{
     ActiveStore, ClaudeProfile, CodexProfile, GeminiProfile, ProfileDescriptor, ProfileManager,

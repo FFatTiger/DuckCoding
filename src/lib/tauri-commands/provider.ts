@@ -1,13 +1,8 @@
 // 供应商管理命令模块
-// 负责供应商的 CRUD、验证、工具实例选择
+// 负责供应商的 CRUD、验证
 
 import { invoke } from '@tauri-apps/api/core';
-import type {
-  Provider,
-  ToolInstanceSelection,
-  _ProviderFormData,
-  ProviderValidationResult,
-} from './types';
+import type { Provider, _ProviderFormData, ProviderValidationResult } from './types';
 
 /**
  * 列出所有供应商
@@ -35,22 +30,6 @@ export async function updateProvider(id: string, provider: Provider): Promise<Pr
  */
 export async function deleteProvider(id: string): Promise<void> {
   return invoke<void>('delete_provider', { id });
-}
-
-/**
- * 获取工具实例选择
- */
-export async function getToolInstanceSelection(
-  toolId: string,
-): Promise<ToolInstanceSelection | null> {
-  return invoke<ToolInstanceSelection | null>('get_tool_instance_selection', { toolId });
-}
-
-/**
- * 设置工具实例选择
- */
-export async function setToolInstanceSelection(selection: ToolInstanceSelection): Promise<void> {
-  return invoke<void>('set_tool_instance_selection', { selection });
 }
 
 /**

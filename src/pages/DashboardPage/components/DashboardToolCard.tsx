@@ -12,7 +12,6 @@ import { RefreshCw, Loader2, Key, Monitor, CheckCircle2, Package } from 'lucide-
 import { logoMap } from '@/utils/constants';
 import { formatVersionLabel } from '@/utils/formatting';
 import type { ToolStatus } from '@/lib/tauri-commands';
-import type { ToolInstanceSelection } from '@/types/provider';
 import type { ToolInstance } from '@/types/tool-management';
 
 interface DashboardToolCardProps {
@@ -20,14 +19,15 @@ interface DashboardToolCardProps {
   updating: boolean;
   checking: boolean; // 当前工具是否正在检测更新
   checkingAll: boolean; // 全局检测更新状态
-  instanceSelection?: ToolInstanceSelection;
+  instanceSelection?: string; // 实例ID字符串
   instanceOptions: Array<{ value: string; label: string }>; // 实例选项列表
   toolInstances: ToolInstance[]; // 工具实例数据
   onUpdate: () => void;
   onCheckUpdates: () => void;
   onConfigure: () => void;
   onInstanceChange: (instanceType: string) => void;
-  onInstall: () => void; // 新增：前往安装页面
+  onInstall: () => void; // 新增:前往安装页面
+  onAdd: () => void; // 新增：前往添加页面
 }
 
 export function DashboardToolCard({
@@ -43,14 +43,15 @@ export function DashboardToolCard({
   onConfigure,
   onInstanceChange,
   onInstall,
+  onAdd,
 }: DashboardToolCardProps) {
   // 是否正在检测更新（全局或单工具）
   const isChecking = checking || checkingAll;
   // 已检测完成且是最新版（确保只在检测更新后才显示）
   const isLatest = tool.hasUpdate === false && Boolean(tool.latestVersion);
 
-  // 直接使用保存的 instance_id，如果不存在则使用第一个选项
-  const currentInstanceId = instanceSelection?.instance_id || instanceOptions[0]?.value || '';
+  // 直接使用保存的实例ID，如果不存在则使用第一个选项
+  const currentInstanceId = instanceSelection || instanceOptions[0]?.value || '';
 
   // 从 toolInstances 中找到当前选中的实例
   const currentInstance = toolInstances.find((inst) => inst.instance_id === currentInstanceId);
@@ -156,28 +157,34 @@ export function DashboardToolCard({
                 状态:
               </span>
               <span className="font-mono text-xs font-semibold text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded-lg shadow-sm">
-                未安装
+                未安装或者没有被软件识别
               </span>
             </div>
           )}
         </div>
 
         <div className="flex gap-2 pt-2 border-t">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onConfigure}
-            disabled={!tool.installed}
-            className="flex-1"
-          >
-            <Key className="mr-2 h-4 w-4" />
-            配置
-          </Button>
-
           {!tool.installed ? (
             <Button variant="outline" size="sm" onClick={onInstall} className="flex-1">
               <Package className="mr-2 h-4 w-4" />
               前往安装
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onConfigure}
+              disabled={!tool.installed}
+              className="flex-1"
+            >
+              <Key className="mr-2 h-4 w-4" />
+              配置
+            </Button>
+          )}
+          {!tool.installed ? (
+            <Button variant="outline" size="sm" onClick={onAdd} className="flex-1">
+              <Package className="mr-2 h-4 w-4" />
+              手动添加
             </Button>
           ) : tool.hasUpdate ? (
             <Button

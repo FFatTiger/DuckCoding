@@ -6,7 +6,6 @@ import type { ProfileData, ProfileDescriptor, ProfilePayload, ToolId } from '@/t
 import type {
   Provider,
   ProviderStore,
-  ToolInstanceSelection,
   _ProviderFormData,
   ProviderValidationResult,
 } from '@/types/provider';
@@ -18,13 +17,7 @@ export type { ProfileData, ProfileDescriptor, ProfilePayload, ToolId };
 export type { SSHConfig };
 
 // 重新导出供应商管理类型
-export type {
-  Provider,
-  ProviderStore,
-  ToolInstanceSelection,
-  _ProviderFormData,
-  ProviderValidationResult,
-};
+export type { Provider, ProviderStore, _ProviderFormData, ProviderValidationResult };
 
 export interface ToolStatus {
   mirrorIsStale: boolean;

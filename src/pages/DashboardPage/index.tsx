@@ -14,6 +14,8 @@ import {
   getUsageStats,
   type ToolStatus,
   refreshAllToolVersions,
+  getSelectedProviderId,
+  setSelectedProviderId as saveSelectedProviderId,
 } from '@/lib/tauri-commands';
 import type { UserQuotaResult, UsageStatsResult } from '@/lib/tauri-commands/types';
 
@@ -55,21 +57,39 @@ export function DashboardPage({ tools: toolsProp, loading: loadingProp }: Dashbo
     toolInstances,
   } = useDashboardProviders();
 
-  // 选中的供应商 ID（纯前端状态）
+  // 选中的供应商 ID（持久化到 dashboard.json）
   const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
+  const [providerIdLoaded, setProviderIdLoaded] = useState(false);
+
+  // 初始化时从后端加载 selectedProviderId
+  useEffect(() => {
+    const loadSelectedProviderId = async () => {
+      try {
+        const savedProviderId = await getSelectedProviderId();
+        if (savedProviderId) {
+          setSelectedProviderId(savedProviderId);
+        }
+      } catch (error) {
+        console.error('加载选中的供应商 ID 失败:', error);
+      } finally {
+        setProviderIdLoaded(true);
+      }
+    };
+    loadSelectedProviderId();
+  }, []);
+
+  // 初始化时选中第一个供应商（如果后端没有保存的值）
+  useEffect(() => {
+    if (providerIdLoaded && providers.length > 0 && !selectedProviderId) {
+      setSelectedProviderId(providers[0].id);
+    }
+  }, [providers, selectedProviderId, providerIdLoaded]);
 
   // 同步外部 tools 数据
   useEffect(() => {
     updateTools(toolsProp);
     setLoading(loadingProp);
   }, [toolsProp, loadingProp, updateTools]);
-
-  // 初始化时选中第一个供应商
-  useEffect(() => {
-    if (providers.length > 0 && !selectedProviderId) {
-      setSelectedProviderId(providers[0].id);
-    }
-  }, [providers, selectedProviderId]);
 
   // 加载用户配额
   const loadQuota = useCallback(async (providerId: string) => {
@@ -169,9 +189,19 @@ export function DashboardPage({ tools: toolsProp, loading: loadingProp }: Dashbo
     window.dispatchEvent(new CustomEvent('navigate-to-install'));
   };
 
-  // 处理供应商切换（纯前端状态切换）
-  const handleProviderChange = (providerId: string) => {
+  // 切换到安装页面
+  const switchToList = () => {
+    window.dispatchEvent(new CustomEvent('navigate-to-list'));
+  };
+
+  // 处理供应商切换（持久化到后端）
+  const handleProviderChange = async (providerId: string) => {
     setSelectedProviderId(providerId);
+    try {
+      await saveSelectedProviderId(providerId);
+    } catch (error) {
+      console.error('保存选中的供应商 ID 失败:', error);
+    }
   };
 
   // 刷新当前供应商的配额和统计数据
@@ -185,10 +215,7 @@ export function DashboardPage({ tools: toolsProp, loading: loadingProp }: Dashbo
   // 处理实例选择变更
   const handleInstanceChange = async (toolId: string, instanceId: string) => {
     // 使用 Hook 提供的函数，直接保存 instance_id
-    const result = await setInstanceSelection({
-      tool_id: toolId,
-      instance_id: instanceId,
-    });
+    const result = await setInstanceSelection(toolId, instanceId);
 
     if (result.success) {
       // 获取实例的 label 用于提示
@@ -317,6 +344,7 @@ export function DashboardPage({ tools: toolsProp, loading: loadingProp }: Dashbo
                     onConfigure={() => switchToConfig(tool.id)}
                     onInstanceChange={(instanceId) => handleInstanceChange(tool.id, instanceId)}
                     onInstall={switchToInstall}
+                    onAdd={switchToList}
                   />
                 ))}
               </div>

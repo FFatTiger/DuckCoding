@@ -2,7 +2,7 @@
 //
 // 供应商管理 Tauri 命令
 
-use ::duckcoding::models::provider::{Provider, ToolInstanceSelection};
+use ::duckcoding::models::provider::Provider;
 use ::duckcoding::services::ProviderManager;
 use anyhow::Result;
 use tauri::State;
@@ -95,42 +95,6 @@ pub async fn delete_provider(
         .manager
         .delete_provider(&id)
         .map_err(|e| format!("删除供应商失败: {}", e))
-}
-
-/// 获取工具实例选择
-#[tauri::command]
-pub async fn get_tool_instance_selection(
-    tool_id: String,
-    state: State<'_, ProviderManagerState>,
-) -> Result<Option<ToolInstanceSelection>, String> {
-    if tool_id.is_empty() {
-        return Err("工具 ID 不能为空".to_string());
-    }
-
-    state
-        .manager
-        .get_tool_instance(&tool_id)
-        .map_err(|e| format!("获取工具实例选择失败: {}", e))
-}
-
-/// 设置工具实例选择
-#[tauri::command]
-pub async fn set_tool_instance_selection(
-    selection: ToolInstanceSelection,
-    state: State<'_, ProviderManagerState>,
-) -> Result<(), String> {
-    // 验证参数
-    if selection.tool_id.is_empty() {
-        return Err("工具 ID 不能为空".to_string());
-    }
-    if selection.instance_id.is_empty() {
-        return Err("实例 ID 不能为空".to_string());
-    }
-
-    state
-        .manager
-        .set_tool_instance(selection)
-        .map_err(|e| format!("设置工具实例选择失败: {}", e))
 }
 
 /// 验证结果结构
