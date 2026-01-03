@@ -123,19 +123,8 @@ pub async fn set_tool_instance_selection(
     if selection.tool_id.is_empty() {
         return Err("工具 ID 不能为空".to_string());
     }
-    if selection.instance_type.is_empty() {
-        return Err("实例类型不能为空".to_string());
-    }
-
-    // 验证实例类型
-    match selection.instance_type.as_str() {
-        "local" | "wsl" | "ssh" => {}
-        _ => return Err("无效的实例类型，必须是 local、wsl 或 ssh".to_string()),
-    }
-
-    // SSH 实例必须提供路径
-    if selection.instance_type == "ssh" && selection.instance_path.is_none() {
-        return Err("SSH 实例必须提供实例路径".to_string());
+    if selection.instance_id.is_empty() {
+        return Err("实例 ID 不能为空".to_string());
     }
 
     state

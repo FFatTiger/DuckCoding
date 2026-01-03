@@ -32,10 +32,8 @@ export interface Provider {
 export interface ToolInstanceSelection {
   /** 工具ID（"claude-code" | "codex" | "gemini-cli"） */
   tool_id: string;
-  /** 实例类型（"local" | "wsl" | "ssh"） */
-  instance_type: string;
-  /** 实例路径（SSH 类型必填） */
-  instance_path?: string;
+  /** 实例唯一ID（如 "claude-code-local", "codex-wsl-Ubuntu"） */
+  instance_id: string;
 }
 
 /**

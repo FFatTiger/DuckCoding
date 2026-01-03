@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { RefreshCw, Loader2, Package, Search } from 'lucide-react';
+import { RefreshCw, Loader2, Search } from 'lucide-react';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { DashboardToolCard } from './components/DashboardToolCard';
 import { UpdateCheckBanner } from './components/UpdateCheckBanner';
@@ -12,9 +11,9 @@ import { getToolDisplayName } from '@/utils/constants';
 import { useToast } from '@/hooks/use-toast';
 import {
   getUserQuota,
-  refreshAllToolVersions,
   getUsageStats,
   type ToolStatus,
+  refreshAllToolVersions,
 } from '@/lib/tauri-commands';
 import type { UserQuotaResult, UsageStatsResult } from '@/lib/tauri-commands/types';
 
@@ -51,6 +50,9 @@ export function DashboardPage({ tools: toolsProp, loading: loadingProp }: Dashbo
     loading: providersLoading,
     instanceSelections,
     setInstanceSelection,
+    getInstanceOptions,
+    loadToolInstances,
+    toolInstances,
   } = useDashboardProviders();
 
   // 选中的供应商 ID（纯前端状态）
@@ -181,17 +183,29 @@ export function DashboardPage({ tools: toolsProp, loading: loadingProp }: Dashbo
   };
 
   // 处理实例选择变更
-  const handleInstanceChange = async (toolId: string, instanceType: string) => {
+  const handleInstanceChange = async (toolId: string, instanceId: string) => {
+    // 使用 Hook 提供的函数，直接保存 instance_id
     const result = await setInstanceSelection({
       tool_id: toolId,
-      instance_type: instanceType,
+      instance_id: instanceId,
     });
 
     if (result.success) {
+      // 获取实例的 label 用于提示
+      const instances = getInstanceOptions(toolId);
+      const selectedInstance = instances.find((opt) => opt.value === instanceId);
+
       toast({
         title: '实例已切换',
-        description: `${getToolDisplayName(toolId)} 已切换到${instanceType === 'local' ? '本地环境' : instanceType === 'wsl' ? 'WSL 环境' : 'SSH 远程'}`,
+        description: `${getToolDisplayName(toolId)} 已切换到 ${selectedInstance?.label || instanceId}`,
       });
+
+      // 切换成功后重新加载工具实例数据以刷新UI
+      try {
+        await loadToolInstances();
+      } catch (error) {
+        console.error('更新工具实例数据失败:', error);
+      }
     } else {
       toast({
         title: '切换失败',
@@ -201,7 +215,27 @@ export function DashboardPage({ tools: toolsProp, loading: loadingProp }: Dashbo
     }
   };
 
-  const installedTools = tools.filter((t) => t.installed);
+  // 固定显示的三个工具ID
+  const FIXED_TOOL_IDS = ['claude-code', 'codex', 'gemini-cli'];
+
+  // 确保始终显示这三个工具，不论是否安装
+  const displayTools = FIXED_TOOL_IDS.map((toolId) => {
+    // 从后端数据中查找该工具
+    const foundTool = tools.find((t) => t.id === toolId);
+    // 如果找到则使用后端数据，否则创建占位数据
+    return (
+      foundTool || {
+        id: toolId,
+        name: getToolDisplayName(toolId),
+        installed: false,
+        version: null,
+        hasUpdate: false,
+        latestVersion: null,
+        mirrorIsStale: false,
+        mirrorVersion: null,
+      }
+    );
+  });
 
   return (
     <PageContainer>
@@ -219,30 +253,12 @@ export function DashboardPage({ tools: toolsProp, loading: loadingProp }: Dashbo
           {/* 更新检查提示 */}
           {updateCheckMessage && <UpdateCheckBanner message={updateCheckMessage} />}
 
-          {installedTools.length === 0 ? (
-            <Card className="shadow-sm border">
-              <CardContent className="pt-6">
-                <div className="text-center py-12">
-                  <Package className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-30" />
-                  <h3 className="text-lg font-semibold mb-2">暂无已安装的工具</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    请先前往安装页面安装 AI 开发工具
-                  </p>
-                  <Button
-                    onClick={switchToInstall}
-                    className="shadow-md hover:shadow-lg transition-all"
-                  >
-                    <Package className="mr-2 h-4 w-4" />
-                    去安装工具
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-6">
-              {/* 第一段：工具卡片 + 操作按钮 */}
-              <div>
-                <div className="flex justify-end gap-2 mb-4">
+          <div className="space-y-6">
+            {/* 第一段：工具卡片 + 操作按钮 */}
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold">工具状态</h3>
+                <div className="flex gap-2">
                   <Button
                     variant="outline"
                     size="sm"
@@ -277,50 +293,71 @@ export function DashboardPage({ tools: toolsProp, loading: loadingProp }: Dashbo
                     ) : (
                       <>
                         <RefreshCw className="mr-2 h-4 w-4" />
-                        检查更新
+                        一键检查更新
                       </>
                     )}
                   </Button>
                 </div>
-
-                {/* 工具卡片列表 */}
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {installedTools.map((tool) => (
-                    <DashboardToolCard
-                      key={tool.id}
-                      tool={tool}
-                      updating={updating === tool.id}
-                      checking={checkingSingleTool === tool.id}
-                      checkingAll={checkingUpdates}
-                      instanceSelection={instanceSelections[tool.id]}
-                      onUpdate={() => onUpdate(tool.id)}
-                      onCheckUpdates={() => checkSingleToolUpdate(tool.id)}
-                      onConfigure={() => switchToConfig(tool.id)}
-                      onInstanceChange={(instanceType) =>
-                        handleInstanceChange(tool.id, instanceType)
-                      }
-                    />
-                  ))}
-                </div>
               </div>
 
-              {/* 第二段：供应商标签页 */}
-              <div>
-                <h3 className="text-lg font-semibold mb-3">供应商与用量统计</h3>
-                <ProviderTabs
-                  providers={providers}
-                  selectedProviderId={selectedProviderId}
-                  loading={providersLoading}
-                  quota={quota}
-                  quotaLoading={quotaLoading}
-                  stats={stats}
-                  statsLoading={statsLoading}
-                  onProviderChange={handleProviderChange}
-                  onRefresh={handleRefreshProviderData}
-                />
+              {/* 工具卡片列表 */}
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {displayTools.map((tool) => (
+                  <DashboardToolCard
+                    key={tool.id}
+                    tool={tool}
+                    updating={updating === tool.id}
+                    checking={checkingSingleTool === tool.id}
+                    checkingAll={checkingUpdates}
+                    instanceSelection={instanceSelections[tool.id]}
+                    instanceOptions={getInstanceOptions(tool.id)}
+                    toolInstances={toolInstances[tool.id] || []}
+                    onUpdate={() => onUpdate(tool.id)}
+                    onCheckUpdates={() => checkSingleToolUpdate(tool.id)}
+                    onConfigure={() => switchToConfig(tool.id)}
+                    onInstanceChange={(instanceId) => handleInstanceChange(tool.id, instanceId)}
+                    onInstall={switchToInstall}
+                  />
+                ))}
               </div>
             </div>
-          )}
+
+            {/* 第二段：供应商标签页 */}
+            <div>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-lg font-semibold">供应商与用量统计</h3>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefreshProviderData}
+                  disabled={quotaLoading || statsLoading}
+                  className="shadow-sm hover:shadow-md transition-all"
+                >
+                  {quotaLoading || statsLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      刷新中...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      刷新
+                    </>
+                  )}
+                </Button>
+              </div>
+              <ProviderTabs
+                providers={providers}
+                selectedProviderId={selectedProviderId}
+                loading={providersLoading}
+                quota={quota}
+                quotaLoading={quotaLoading}
+                stats={stats}
+                statsLoading={statsLoading}
+                onProviderChange={handleProviderChange}
+              />
+            </div>
+          </div>
         </>
       )}
     </PageContainer>

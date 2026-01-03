@@ -33,10 +33,8 @@ pub struct Provider {
 pub struct ToolInstanceSelection {
     /// 工具ID ("claude-code" | "codex" | "gemini-cli")
     pub tool_id: String,
-    /// 实例类型 ("local" | "wsl" | "ssh")
-    pub instance_type: String,
-    /// SSH 实例的路径（可选）
-    pub instance_path: Option<String>,
+    /// 实例唯一ID（如 "claude-code-local", "codex-wsl-Ubuntu"）
+    pub instance_id: String,
 }
 
 /// 供应商存储结构
@@ -115,15 +113,13 @@ mod tests {
     fn test_tool_instance_selection() {
         let selection = ToolInstanceSelection {
             tool_id: "claude-code".to_string(),
-            instance_type: "local".to_string(),
-            instance_path: None,
+            instance_id: "claude-code-local".to_string(),
         };
 
         let json = serde_json::to_string(&selection).unwrap();
         let deserialized: ToolInstanceSelection = serde_json::from_str(&json).unwrap();
 
         assert_eq!(deserialized.tool_id, "claude-code");
-        assert_eq!(deserialized.instance_type, "local");
-        assert!(deserialized.instance_path.is_none());
+        assert_eq!(deserialized.instance_id, "claude-code-local");
     }
 }

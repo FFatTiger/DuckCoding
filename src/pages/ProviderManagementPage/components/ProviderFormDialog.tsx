@@ -10,9 +10,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, CheckCircle2, XCircle, User } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, User, Info } from 'lucide-react';
 import type { Provider } from '@/lib/tauri-commands';
 import { validateProviderConfig } from '@/lib/tauri-commands';
+import { openExternalLink } from '@/utils/formatting.ts';
 
 interface ProviderFormDialogProps {
   open: boolean;
@@ -177,6 +178,30 @@ export function ProviderFormDialog({
                 placeholder="您的访问令牌"
                 required
               />
+            </div>
+
+            <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-4">
+              <div className="flex items-start gap-2">
+                <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                <div className="space-y-2 flex-1">
+                  <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                    如何获取用户 ID 和系统访问令牌？
+                  </p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    请访问 对应平台的[控制台-{'>'}个人设置-{'>'}安全设置-{'>'}系统访问令牌]
+                    获取您的凭证信息
+                  </p>
+                  <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                    DuckCoding用户？
+                  </p>
+                  <button
+                    onClick={() => openExternalLink('https://duckcoding.com/console/personal')}
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                  >
+                    前往控制台 →
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* 验证结果 */}

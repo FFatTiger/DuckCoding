@@ -81,11 +81,6 @@ export function ProviderTabs({
               >
                 <div className="flex items-center gap-2">
                   <span>{provider.name}</span>
-                  {provider.is_default && (
-                    <Badge variant="secondary" className="text-xs px-1.5 py-0">
-                      默认
-                    </Badge>
-                  )}
                   {isSelected && (
                     <Badge variant="default" className="text-xs px-1.5 py-0">
                       当前

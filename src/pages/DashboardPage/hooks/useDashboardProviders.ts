@@ -5,9 +5,11 @@ import {
   listProviders,
   getToolInstanceSelection,
   setToolInstanceSelection,
+  getToolInstances,
   type Provider,
   type ToolInstanceSelection,
 } from '@/lib/tauri-commands';
+import type { ToolInstance } from '@/types/tool-management';
 
 export function useDashboardProviders() {
   const [providers, setProviders] = useState<Provider[]>([]);
@@ -15,6 +17,20 @@ export function useDashboardProviders() {
   const [instanceSelections, setInstanceSelections] = useState<
     Record<string, ToolInstanceSelection>
   >({});
+  // 所有工具实例（按工具ID分组）
+  const [toolInstances, setToolInstances] = useState<Record<string, ToolInstance[]>>({});
+
+  /**
+   * 加载所有工具实例
+   */
+  const loadToolInstances = useCallback(async () => {
+    try {
+      const instances = await getToolInstances();
+      setToolInstances(instances);
+    } catch (error) {
+      console.error('加载工具实例失败:', error);
+    }
+  }, []);
 
   /**
    * 加载所有供应商
@@ -81,14 +97,44 @@ export function useDashboardProviders() {
    */
   useEffect(() => {
     loadProviders();
+    loadToolInstances();
     loadAllInstanceSelections();
-  }, [loadProviders, loadAllInstanceSelections]);
+  }, [loadProviders, loadToolInstances, loadAllInstanceSelections]);
+
+  /**
+   * 获取工具的可用实例选项（用于下拉列表）
+   * value: instance_id
+   * label: [类型-版本]
+   */
+  const getInstanceOptions = useCallback(
+    (toolId: string) => {
+      const instances = toolInstances[toolId] || [];
+
+      return instances.map((inst) => {
+        // 类型显示文本
+        const typeText =
+          inst.tool_type === 'Local' ? '本地' : inst.tool_type === 'WSL' ? 'WSL' : 'SSH';
+
+        // 版本显示
+        const versionText = inst.version || '未知版本';
+
+        return {
+          value: inst.instance_id,
+          label: `${typeText} - ${versionText}`,
+        };
+      });
+    },
+    [toolInstances],
+  );
 
   return {
     providers,
     loading,
     instanceSelections,
+    toolInstances,
     loadProviders,
+    loadToolInstances,
     setInstanceSelection: handleSetInstanceSelection,
+    getInstanceOptions,
   };
 }

@@ -153,12 +153,7 @@ export function ProviderManagementPage() {
                   return (
                     <TableRow key={provider.id}>
                       {/* 名称 */}
-                      <TableCell className="font-medium">
-                        {provider.name}
-                        {provider.is_default && (
-                          <span className="ml-2 text-xs text-muted-foreground">(默认)</span>
-                        )}
-                      </TableCell>
+                      <TableCell className="font-medium">{provider.name}</TableCell>
 
                       {/* 官网地址 */}
                       <TableCell>
@@ -222,7 +217,11 @@ export function ProviderManagementPage() {
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         providerName={deletingProvider?.name || ''}
-        onConfirm={() => deletingProvider && handleDelete(deletingProvider.id)}
+        onConfirm={async () => {
+          if (deletingProvider) {
+            await handleDelete(deletingProvider.id);
+          }
+        }}
         deleting={deleting}
       />
     </PageContainer>
