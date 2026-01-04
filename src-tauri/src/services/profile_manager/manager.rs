@@ -41,7 +41,7 @@ impl ProfileManager {
         })
     }
 
-    fn load_profiles_store(&self) -> Result<ProfilesStore> {
+    pub fn load_profiles_store(&self) -> Result<ProfilesStore> {
         if !self.profiles_path.exists() {
             return Ok(ProfilesStore::new());
         }
@@ -49,7 +49,7 @@ impl ProfileManager {
         serde_json::from_value(value).context("反序列化 ProfilesStore 失败")
     }
 
-    fn save_profiles_store(&self, store: &ProfilesStore) -> Result<()> {
+    pub fn save_profiles_store(&self, store: &ProfilesStore) -> Result<()> {
         // 创建锁文件（与 profiles.json 同目录）
         let lock_path = self.profiles_path.with_extension("lock");
         let lock_file = File::create(&lock_path).context("创建锁文件失败")?;
@@ -121,6 +121,7 @@ impl ProfileManager {
                 updated_at: Utc::now(),
                 raw_settings: None,
                 raw_config_json: None,
+                source: ProfileSource::Custom,
             }
         };
 
@@ -206,6 +207,7 @@ impl ProfileManager {
                 updated_at: Utc::now(),
                 raw_config_toml: None,
                 raw_auth_json: None,
+                source: ProfileSource::Custom,
             }
         };
 
@@ -293,6 +295,7 @@ impl ProfileManager {
                 updated_at: Utc::now(),
                 raw_settings: None,
                 raw_env: None,
+                source: ProfileSource::Custom,
             }
         };
 
@@ -486,6 +489,7 @@ impl ProfileManager {
                 updated_at: Utc::now(),
                 raw_settings: None,
                 raw_config_json: None,
+                source: ProfileSource::Custom,
             }
         };
 
@@ -533,6 +537,7 @@ impl ProfileManager {
                 updated_at: Utc::now(),
                 raw_config_toml: None,
                 raw_auth_json: None,
+                source: ProfileSource::Custom,
             }
         };
 
@@ -582,6 +587,7 @@ impl ProfileManager {
                 updated_at: Utc::now(),
                 raw_settings: None,
                 raw_env: None,
+                source: ProfileSource::Custom,
             }
         };
 

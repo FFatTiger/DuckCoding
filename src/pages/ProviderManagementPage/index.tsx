@@ -9,13 +9,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Building2, Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Building2, Plus, Pencil, Trash2, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import type { Provider } from '@/lib/tauri-commands';
 import { useToast } from '@/hooks/use-toast';
 import { useProviderManagement } from './hooks/useProviderManagement';
 import { ProviderFormDialog } from './components/ProviderFormDialog';
 import { DeleteConfirmDialog } from './components/DeleteConfirmDialog';
+import { RemoteTokenManagement } from './components/RemoteTokenManagement';
 
 /**
  * 供应商管理页面
@@ -31,6 +32,7 @@ export function ProviderManagementPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingProvider, setDeletingProvider] = useState<Provider | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [expandedProviderId, setExpandedProviderId] = useState<string | null>(null);
 
   /**
    * 打开新增对话框
@@ -102,6 +104,13 @@ export function ProviderManagementPage() {
     return new Date(timestamp * 1000).toLocaleString('zh-CN');
   };
 
+  /**
+   * 切换展开/折叠
+   */
+  const toggleExpand = (providerId: string) => {
+    setExpandedProviderId((prev) => (prev === providerId ? null : providerId));
+  };
+
   return (
     <PageContainer>
       <div className="space-y-4 rounded-lg border p-6">
@@ -141,6 +150,7 @@ export function ProviderManagementPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12"></TableHead>
                   <TableHead>名称</TableHead>
                   <TableHead>官网地址</TableHead>
                   <TableHead>用户名</TableHead>
@@ -150,51 +160,79 @@ export function ProviderManagementPage() {
               </TableHeader>
               <TableBody>
                 {providers.map((provider) => {
+                  const isExpanded = expandedProviderId === provider.id;
                   return (
-                    <TableRow key={provider.id}>
-                      {/* 名称 */}
-                      <TableCell className="font-medium">{provider.name}</TableCell>
-
-                      {/* 官网地址 */}
-                      <TableCell>
-                        <a
-                          href={provider.website_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-primary hover:underline"
-                        >
-                          {provider.website_url}
-                        </a>
-                      </TableCell>
-
-                      {/* 用户名 */}
-                      <TableCell className="text-sm">{provider.username || '-'}</TableCell>
-
-                      {/* 更新时间 */}
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatTimestamp(provider.updated_at)}
-                      </TableCell>
-
-                      {/* 操作 */}
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button size="sm" variant="ghost" onClick={() => handleEdit(provider)}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
+                    <>
+                      <TableRow key={provider.id}>
+                        {/* 展开按钮 */}
+                        <TableCell>
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => {
-                              setDeletingProvider(provider);
-                              setDeleteDialogOpen(true);
-                            }}
-                            disabled={provider.is_default}
+                            onClick={() => toggleExpand(provider.id)}
+                            className="h-6 w-6 p-0"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            {isExpanded ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
                           </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                        </TableCell>
+
+                        {/* 名称 */}
+                        <TableCell className="font-medium">{provider.name}</TableCell>
+
+                        {/* 官网地址 */}
+                        <TableCell>
+                          <a
+                            href={provider.website_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-primary hover:underline"
+                          >
+                            {provider.website_url}
+                          </a>
+                        </TableCell>
+
+                        {/* 用户名 */}
+                        <TableCell className="text-sm">{provider.username || '-'}</TableCell>
+
+                        {/* 更新时间 */}
+                        <TableCell className="text-sm text-muted-foreground">
+                          {formatTimestamp(provider.updated_at)}
+                        </TableCell>
+
+                        {/* 操作 */}
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button size="sm" variant="ghost" onClick={() => handleEdit(provider)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setDeletingProvider(provider);
+                                setDeleteDialogOpen(true);
+                              }}
+                              disabled={provider.is_default}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+
+                      {/* 展开内容：令牌管理 */}
+                      {isExpanded && (
+                        <TableRow>
+                          <TableCell colSpan={6} className="bg-muted/30 p-6">
+                            <RemoteTokenManagement provider={provider} />
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </>
                   );
                 })}
               </TableBody>

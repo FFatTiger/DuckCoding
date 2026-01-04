@@ -3,9 +3,15 @@
  */
 
 import { useState, useEffect } from 'react';
-import { RefreshCw, Loader2, HelpCircle } from 'lucide-react';
+import { RefreshCw, Loader2, HelpCircle, Plus, Download, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
@@ -17,6 +23,7 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { ProfileCard } from './components/ProfileCard';
 import { ProfileEditor } from './components/ProfileEditor';
 import { ActiveProfileCard } from './components/ActiveProfileCard';
+import { ImportFromProviderDialog } from './components/ImportFromProviderDialog';
 import { useProfileManagement } from './hooks/useProfileManagement';
 import type { ToolId, ProfileFormData, ProfileDescriptor } from '@/types/profile';
 import { logoMap } from '@/utils/constants';
@@ -40,6 +47,7 @@ export default function ProfileManagementPage() {
   const [editorMode, setEditorMode] = useState<'create' | 'edit'>('create');
   const [editingProfile, setEditingProfile] = useState<ProfileDescriptor | null>(null);
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   // 初始化加载透明代理状态
   useEffect(() => {
@@ -167,13 +175,24 @@ export default function ProfileManagementPage() {
                       {group.active_profile && ` · 当前激活: ${group.active_profile.name}`}
                     </p>
                   </div>
-                  <Button
-                    onClick={handleCreateProfile}
-                    size="sm"
-                    disabled={selectedTab !== group.tool_id}
-                  >
-                    创建 Profile
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="sm" disabled={selectedTab !== group.tool_id}>
+                        创建 Profile
+                        <ChevronDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={handleCreateProfile}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        手动创建
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setImportDialogOpen(true)}>
+                        <Download className="mr-2 h-4 w-4" />
+                        从供应商导入
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
                 {/* Profile 卡片列表 */}
@@ -213,6 +232,17 @@ export default function ProfileManagementPage() {
 
       {/* 帮助弹窗 */}
       <HelpDialog open={helpDialogOpen} onOpenChange={setHelpDialogOpen} />
+
+      {/* 从供应商导入对话框 */}
+      <ImportFromProviderDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        toolId={selectedTab}
+        onSuccess={() => {
+          setImportDialogOpen(false);
+          refresh();
+        }}
+      />
     </PageContainer>
   );
 }

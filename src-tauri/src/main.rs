@@ -376,6 +376,14 @@ fn main() {
         update_provider,
         delete_provider,
         validate_provider_config,
+        // 令牌资产管理命令（NEW API 集成）
+        fetch_provider_tokens,
+        fetch_provider_groups,
+        create_provider_token,
+        delete_provider_token,
+        update_provider_token,
+        import_token_as_profile,
+        create_custom_profile,
         // Dashboard 管理命令
         get_tool_instance_selection,
         set_tool_instance_selection,
