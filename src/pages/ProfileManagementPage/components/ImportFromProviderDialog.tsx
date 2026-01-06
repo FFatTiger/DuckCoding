@@ -805,10 +805,10 @@ export const ImportFromProviderDialog = forwardRef<
                       tokenGroups.map((group) => (
                         <SelectItem key={group.id} value={group.id}>
                           <div className="flex items-center justify-between gap-4 w-full">
-                            <span>{group.id} ({group.ratio}x)</span>
-                            <span className="text-xs text-muted-foreground">
-                              {group.desc}
+                            <span>
+                              {group.id} ({group.ratio}x)
                             </span>
+                            <span className="text-xs text-muted-foreground">{group.desc}</span>
                           </div>
                         </SelectItem>
                       ))

@@ -170,9 +170,9 @@ export function ProviderManagementPage() {
                 <p className="text-sm">暂无供应商，请点击「新增供应商」按钮添加</p>
               </div>
             ) : (
-              <div className="rounded-md border">
+              <div className="rounded-md border max-h-[500px] overflow-auto">
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="sticky top-0 bg-background z-10">
                     <TableRow>
                       <TableHead>名称</TableHead>
                       <TableHead>官网地址</TableHead>

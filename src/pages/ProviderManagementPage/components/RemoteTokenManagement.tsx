@@ -13,20 +13,24 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Loader2, Plus, Download, Trash2, RefreshCw, Pencil } from 'lucide-react';
 import type { Provider } from '@/types/provider';
-import type { RemoteToken, RemoteTokenGroup } from '@/types/remote-token';
+import type { RemoteToken } from '@/types/remote-token';
 import { TOKEN_STATUS_TEXT, TOKEN_STATUS_VARIANT, TokenStatus } from '@/types/remote-token';
-import {
-  fetchProviderTokens,
-  deleteProviderToken,
-  fetchProviderGroups,
-  updateProviderTokenFull,
-} from '@/lib/tauri-commands/token';
+import { fetchProviderTokens, deleteProviderToken } from '@/lib/tauri-commands/token';
 import { useToast } from '@/hooks/use-toast';
-import { CreateRemoteTokenDialog } from './CreateRemoteTokenDialog';
+import { TokenFormDialog } from './TokenFormDialog';
 import { ImportTokenDialog } from './ImportTokenDialog';
-import { EditTokenDialog } from './EditTokenDialog';
 
 interface RemoteTokenManagementProps {
   provider: Provider;
@@ -40,26 +44,24 @@ export function RemoteTokenManagement({ provider }: RemoteTokenManagementProps) 
   const [tokens, setTokens] = useState<RemoteToken[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [tokenFormMode, setTokenFormMode] = useState<'create' | 'edit'>('create');
+  const [tokenFormOpen, setTokenFormOpen] = useState(false);
+  const [editingToken, setEditingToken] = useState<RemoteToken | null>(null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedToken, setSelectedToken] = useState<RemoteToken | null>(null);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editingToken, setEditingToken] = useState<RemoteToken | null>(null);
-  const [tokenGroups, setTokenGroups] = useState<RemoteTokenGroup[]>([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingToken, setDeletingToken] = useState<RemoteToken | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   /**
-   * 加载令牌列表和分组
+   * 加载令牌列表
    */
   const loadTokens = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [tokensResult, groupsResult] = await Promise.all([
-        fetchProviderTokens(provider),
-        fetchProviderGroups(provider),
-      ]);
+      const tokensResult = await fetchProviderTokens(provider);
       setTokens(tokensResult);
-      setTokenGroups(groupsResult);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
       setError(errorMsg);
@@ -74,15 +76,28 @@ export function RemoteTokenManagement({ provider }: RemoteTokenManagementProps) 
   };
 
   /**
-   * 删除令牌
+   * 打开删除确认对话框
    */
-  const handleDelete = async (tokenId: number, tokenName: string) => {
+  const handleDelete = (token: RemoteToken) => {
+    setDeletingToken(token);
+    setDeleteDialogOpen(true);
+  };
+
+  /**
+   * 确认删除令牌
+   */
+  const confirmDelete = async () => {
+    if (!deletingToken) return;
+
+    setDeleting(true);
     try {
-      await deleteProviderToken(provider, tokenId);
+      await deleteProviderToken(provider, deletingToken.id);
       toast({
         title: '令牌已删除',
-        description: `令牌「${tokenName}」已成功删除`,
+        description: `令牌「${deletingToken.name}」已成功删除`,
       });
+      setDeleteDialogOpen(false);
+      setDeletingToken(null);
       await loadTokens();
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
@@ -91,7 +106,27 @@ export function RemoteTokenManagement({ provider }: RemoteTokenManagementProps) 
         description: errorMsg,
         variant: 'destructive',
       });
+    } finally {
+      setDeleting(false);
     }
+  };
+
+  /**
+   * 打开创建对话框
+   */
+  const handleCreate = () => {
+    setTokenFormMode('create');
+    setEditingToken(null);
+    setTokenFormOpen(true);
+  };
+
+  /**
+   * 打开编辑对话框
+   */
+  const handleEdit = (token: RemoteToken) => {
+    setTokenFormMode('edit');
+    setEditingToken(token);
+    setTokenFormOpen(true);
   };
 
   /**
@@ -100,14 +135,6 @@ export function RemoteTokenManagement({ provider }: RemoteTokenManagementProps) 
   const handleImport = (token: RemoteToken) => {
     setSelectedToken(token);
     setImportDialogOpen(true);
-  };
-
-  /**
-   * 打开编辑对话框
-   */
-  const handleEdit = (token: RemoteToken) => {
-    setEditingToken(token);
-    setEditDialogOpen(true);
   };
 
   /**
@@ -143,7 +170,7 @@ export function RemoteTokenManagement({ provider }: RemoteTokenManagementProps) 
             <RefreshCw className={`mr-2 h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
             刷新
           </Button>
-          <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+          <Button size="sm" onClick={handleCreate}>
             <Plus className="mr-2 h-3 w-3" />
             创建令牌
           </Button>
@@ -228,7 +255,7 @@ export function RemoteTokenManagement({ provider }: RemoteTokenManagementProps) 
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => handleDelete(token.id, token.name)}
+                        onClick={() => handleDelete(token)}
                         title="删除令牌"
                       >
                         <Trash2 className="h-3 w-3" />
@@ -242,11 +269,13 @@ export function RemoteTokenManagement({ provider }: RemoteTokenManagementProps) 
         </div>
       )}
 
-      {/* 创建令牌对话框 */}
-      <CreateRemoteTokenDialog
+      {/* 令牌表单对话框（创建/编辑） */}
+      <TokenFormDialog
+        mode={tokenFormMode}
         provider={provider}
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
+        open={tokenFormOpen}
+        onOpenChange={setTokenFormOpen}
+        token={editingToken}
         onSuccess={loadTokens}
       />
 
@@ -264,18 +293,36 @@ export function RemoteTokenManagement({ provider }: RemoteTokenManagementProps) 
         />
       )}
 
-      {/* 编辑令牌对话框 */}
-      {editingToken && (
-        <EditTokenDialog
-          open={editDialogOpen}
-          onOpenChange={setEditDialogOpen}
-          provider={provider}
-          token={editingToken}
-          tokenGroups={tokenGroups}
-          onSuccess={loadTokens}
-          onUpdate={updateProviderTokenFull}
-        />
-      )}
+      {/* 删除确认对话框 */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除令牌</AlertDialogTitle>
+            <AlertDialogDescription>
+              您确定要删除令牌 <strong>{deletingToken?.name}</strong> 吗？
+              <br />
+              此操作无法撤销，该令牌将被永久删除。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  删除中...
+                </>
+              ) : (
+                '确认删除'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

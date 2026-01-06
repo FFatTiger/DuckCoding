@@ -117,8 +117,12 @@ pub async fn import_token_as_profile(
     };
 
     // 提取 API Key 和 Base URL
+    // 优先使用 api_address，未设置时使用 website_url
     let api_key = remote_token.key.clone();
-    let base_url = provider.website_url.clone();
+    let base_url = provider
+        .api_address
+        .clone()
+        .unwrap_or(provider.website_url.clone());
 
     // 直接操作 ProfilesStore 以支持自定义 source 字段
     let manager = profile_manager.manager.read().await;
@@ -293,6 +297,7 @@ mod tests {
             id: "test-provider".to_string(),
             name: "Test Provider".to_string(),
             website_url: "https://api.test.com".to_string(),
+            api_address: None,
             user_id: "123".to_string(),
             access_token: "token123".to_string(),
             username: None,

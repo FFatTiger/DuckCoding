@@ -376,6 +376,7 @@ fn main() {
         update_provider,
         delete_provider,
         validate_provider_config,
+        fetch_provider_api_addresses,
         // 令牌资产管理命令（NEW API 集成）
         fetch_provider_tokens,
         fetch_provider_groups,
