@@ -183,19 +183,21 @@ export function CreateRemoteTokenDialog({
               >
                 <SelectTrigger id="token-group">
                   <SelectValue placeholder="选择分组">
-                    {formData.group_id && (
-                      <span className="truncate">
-                        {groups.find((g) => g.id === formData.group_id)?.id || formData.group_id}
-                      </span>
-                    )}
+                    {formData.group_id &&
+                      (() => {
+                        const selectedGroup = groups.find((g) => g.id === formData.group_id);
+                        return selectedGroup
+                          ? `${selectedGroup.id} (${selectedGroup.ratio}x)`
+                          : formData.group_id;
+                      })()}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {groups.map((group) => (
                     <SelectItem key={group.id} value={group.id}>
                       <div className="flex flex-col items-start text-left">
-                        <span className="font-medium">{group.id}</span>
-                        <span className="text-xs text-muted-foreground">(倍率: {group.ratio})</span>
+                        <span className="font-medium">{group.id}({group.ratio}x)</span>
+                        <span className="text-xs text-muted-foreground">{group.desc} </span>
                       </div>
                     </SelectItem>
                   ))}

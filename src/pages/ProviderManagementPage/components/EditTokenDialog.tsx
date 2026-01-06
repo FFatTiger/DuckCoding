@@ -241,7 +241,15 @@ export function EditTokenDialog({
             <Label htmlFor="group-select">分组 *</Label>
             <Select value={groupId} onValueChange={setGroupId}>
               <SelectTrigger id="group-select">
-                <SelectValue placeholder="请选择分组" />
+                <SelectValue placeholder="请选择分组">
+                  {groupId &&
+                    (() => {
+                      const selectedGroup = tokenGroups.find((g) => g.id === groupId);
+                      return selectedGroup
+                        ? `${selectedGroup.id} (${selectedGroup.ratio}x)`
+                        : groupId;
+                    })()}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {tokenGroups.length === 0 ? (
@@ -250,8 +258,8 @@ export function EditTokenDialog({
                   tokenGroups.map((group) => (
                     <SelectItem key={group.id} value={group.id}>
                       <div className="flex items-center justify-between gap-4 w-full">
-                        <span>{group.id}</span>
-                        <span className="text-xs text-muted-foreground">{group.desc} (倍率: {group.ratio})</span>
+                        <span className="font-medium">{group.id} ({group.ratio}x)</span>
+                        <span className="text-xs text-muted-foreground">{group.desc} </span>
                       </div>
                     </SelectItem>
                   ))

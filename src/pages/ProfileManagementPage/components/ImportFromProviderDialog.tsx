@@ -27,17 +27,24 @@ import { DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Download } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2, Download, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { ToolId } from '@/types/profile';
 import type { Provider } from '@/types/provider';
-import type { RemoteToken, RemoteTokenGroup, CreateRemoteTokenRequest } from '@/types/remote-token';
+import type {
+  RemoteToken,
+  RemoteTokenGroup,
+  CreateRemoteTokenRequest,
+  TokenImportStatus,
+} from '@/types/remote-token';
 import { listProviders } from '@/lib/tauri-commands/provider';
 import {
   fetchProviderTokens,
   fetchProviderGroups,
   importTokenAsProfile,
   createProviderToken,
+  checkTokenImportStatus,
 } from '@/lib/tauri-commands/token';
 import { pmListToolProfiles } from '@/lib/tauri-commands/profile';
 import { generateApiKeyForTool, getGlobalConfig } from '@/lib/tauri-commands';
@@ -100,9 +107,21 @@ export const ImportFromProviderDialog = forwardRef<
   const [importing, setImporting] = useState(false);
   const [creating, setCreating] = useState(false);
 
+  // ==================== 令牌导入状态检测 ====================
+  const [tokenImportStatus, setTokenImportStatus] = useState<TokenImportStatus[]>([]);
+  const [checkingImportStatus, setCheckingImportStatus] = useState(false);
+
   // 获取当前选中的供应商和令牌
   const selectedProvider = providers.find((p) => p.id === providerId);
   const selectedToken = tokens.find((t) => t.id === tokenId);
+
+  /**
+   * 检查令牌是否已导入到当前工具
+   */
+  const isTokenAlreadyImported = (): boolean => {
+    const currentToolStatus = tokenImportStatus.find((s) => s.tool_id === toolId);
+    return currentToolStatus?.is_imported ?? false;
+  };
 
   /**
    * 加载供应商列表
@@ -195,6 +214,8 @@ export const ImportFromProviderDialog = forwardRef<
       setExpireDays(0);
       setUnlimitedQuota(true);
       setUnlimitedExpire(true);
+      setTokenImportStatus([]);
+      setCheckingImportStatus(false);
 
       // 加载供应商列表
       loadProviders();
@@ -219,11 +240,33 @@ export const ImportFromProviderDialog = forwardRef<
   }, [providerId]);
 
   /**
-   * 令牌变更时自动填充 Profile 名称
+   * 检测令牌是否已导入
+   */
+  const checkImportStatus = async (provider: Provider, token: RemoteToken) => {
+    try {
+      setCheckingImportStatus(true);
+      const status = await checkTokenImportStatus(provider.id, token.id);
+      setTokenImportStatus(status);
+    } catch (err) {
+      console.error('检测令牌导入状态失败:', err);
+      setTokenImportStatus([]);
+    } finally {
+      setCheckingImportStatus(false);
+    }
+  };
+
+  /**
+   * 令牌变更时自动填充 Profile 名称并检测导入状态
    */
   useEffect(() => {
     if (selectedToken && !profileName) {
       setProfileName(selectedToken.name + '_profile');
+    }
+    // 检测令牌是否已导入
+    if (selectedToken && selectedProvider) {
+      checkImportStatus(selectedProvider, selectedToken);
+    } else {
+      setTokenImportStatus([]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tokenId]);
@@ -646,6 +689,32 @@ export const ImportFromProviderDialog = forwardRef<
                 />
               )}
 
+              {/* 令牌导入状态提示 */}
+              {selectedToken &&
+                tokenImportStatus.length > 0 &&
+                (() => {
+                  const currentToolStatus = tokenImportStatus.find((s) => s.tool_id === toolId);
+                  if (currentToolStatus?.is_imported) {
+                    return (
+                      <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          此令牌已在{' '}
+                          {toolId === 'claude-code'
+                            ? 'Claude Code'
+                            : toolId === 'codex'
+                              ? 'Codex'
+                              : 'Gemini CLI'}{' '}
+                          中添加
+                          {currentToolStatus.imported_profile_name &&
+                            `（Profile: ${currentToolStatus.imported_profile_name}）`}
+                        </AlertDescription>
+                      </Alert>
+                    );
+                  }
+                  return null;
+                })()}
+
               {/* Profile 名称输入 */}
               <ProfileNameInput
                 value={profileName}
@@ -665,11 +734,17 @@ export const ImportFromProviderDialog = forwardRef<
                 </Button>
                 <Button
                   onClick={handleImportFromSelect}
-                  disabled={importing || !selectedProvider || !selectedToken}
+                  disabled={
+                    importing ||
+                    !selectedProvider ||
+                    !selectedToken ||
+                    checkingImportStatus ||
+                    isTokenAlreadyImported()
+                  }
                 >
                   {importing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {!importing && <Download className="mr-2 h-4 w-4" />}
-                  导入
+                  {isTokenAlreadyImported() ? '已导入' : '导入'}
                 </Button>
               </DialogFooter>
             </TabsContent>
@@ -706,7 +781,15 @@ export const ImportFromProviderDialog = forwardRef<
                             ? '加载中...'
                             : '请选择分组'
                       }
-                    />
+                    >
+                      {groupId &&
+                        (() => {
+                          const selectedGroup = tokenGroups.find((g) => g.id === groupId);
+                          return selectedGroup
+                            ? `${selectedGroup.id} (${selectedGroup.ratio}x)`
+                            : groupId;
+                        })()}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {loadingGroups ? (
@@ -722,9 +805,9 @@ export const ImportFromProviderDialog = forwardRef<
                       tokenGroups.map((group) => (
                         <SelectItem key={group.id} value={group.id}>
                           <div className="flex items-center justify-between gap-4 w-full">
-                            <span>{group.id}</span>
+                            <span>{group.id} ({group.ratio}x)</span>
                             <span className="text-xs text-muted-foreground">
-                              {group.desc} (倍率: {group.ratio})
+                              {group.desc}
                             </span>
                           </div>
                         </SelectItem>
