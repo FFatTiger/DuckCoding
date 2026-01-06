@@ -8,6 +8,7 @@ import type {
   CreateRemoteTokenRequest,
   RemoteToken,
   RemoteTokenGroup,
+  TokenImportStatus,
   UpdateRemoteTokenRequest,
 } from '@/types/remote-token';
 
@@ -99,5 +100,19 @@ export async function createCustomProfile(
     apiKey,
     baseUrl,
     extraConfig: extraConfig || null,
+  });
+}
+
+/**
+ * 检测令牌是否已导入到任何工具
+ */
+export async function checkTokenImportStatus(
+  providerId: string,
+  remoteTokenId: number,
+): Promise<TokenImportStatus[]> {
+  return invoke<TokenImportStatus[]>('check_token_import_status', {
+    profileManager: null, // Managed by Tauri State
+    providerId,
+    remoteTokenId,
   });
 }

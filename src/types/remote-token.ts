@@ -117,3 +117,15 @@ export const TOKEN_STATUS_VARIANT: Record<
   [TokenStatus.Expired]: 'destructive',
   [TokenStatus.Exhausted]: 'outline',
 };
+
+/**
+ * 令牌导入状态（用于检测令牌是否已导入到某个工具）
+ */
+export interface TokenImportStatus {
+  /** 工具 ID (claude-code, codex, gemini-cli) */
+  tool_id: string;
+  /** 是否已导入 */
+  is_imported: boolean;
+  /** 已导入的 Profile 名称（如果已导入） */
+  imported_profile_name?: string;
+}

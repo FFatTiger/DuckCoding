@@ -6,12 +6,26 @@ use ::duckcoding::models::provider::Provider;
 use ::duckcoding::models::remote_token::{
     CreateRemoteTokenRequest, RemoteToken, RemoteTokenGroup, UpdateRemoteTokenRequest,
 };
+use ::duckcoding::services::profile_manager::types::TokenImportStatus;
 use ::duckcoding::services::{
     ClaudeProfile, CodexProfile, GeminiProfile, NewApiClient, ProfileSource,
 };
 use anyhow::Result;
 use chrono::Utc;
 use tauri::State;
+
+/// 检测令牌是否已导入到任何工具
+#[tauri::command]
+pub async fn check_token_import_status(
+    profile_manager: State<'_, crate::commands::profile_commands::ProfileManagerState>,
+    provider_id: String,
+    remote_token_id: i64,
+) -> Result<Vec<TokenImportStatus>, String> {
+    let manager = profile_manager.manager.read().await;
+    manager
+        .check_import_status(&provider_id, remote_token_id)
+        .map_err(|e| e.to_string())
+}
 
 /// 获取指定供应商的远程令牌列表
 #[tauri::command]

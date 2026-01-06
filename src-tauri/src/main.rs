@@ -385,6 +385,7 @@ fn main() {
         update_provider_token_full,
         import_token_as_profile,
         create_custom_profile,
+        check_token_import_status,
         // Dashboard 管理命令
         get_tool_instance_selection,
         set_tool_instance_selection,

@@ -195,9 +195,7 @@ export function CreateRemoteTokenDialog({
                     <SelectItem key={group.id} value={group.id}>
                       <div className="flex flex-col items-start text-left">
                         <span className="font-medium">{group.id}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {group.desc} (倍率: {group.ratio})
-                        </span>
+                        <span className="text-xs text-muted-foreground">(倍率: {group.ratio})</span>
                       </div>
                     </SelectItem>
                   ))}

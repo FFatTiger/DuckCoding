@@ -361,3 +361,16 @@ fn mask_api_key(key: &str) -> String {
     let suffix = &key[key.len() - 4..];
     format!("{}...{}", prefix, suffix)
 }
+
+// ==================== 令牌导入状态 ====================
+
+/// 令牌导入状态（用于检测令牌是否已导入到某个工具）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TokenImportStatus {
+    /// 工具 ID (claude-code, codex, gemini-cli)
+    pub tool_id: String,
+    /// 是否已导入
+    pub is_imported: bool,
+    /// 已导入的 Profile 名称（如果已导入）
+    pub imported_profile_name: Option<String>,
+}

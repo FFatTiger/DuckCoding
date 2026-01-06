@@ -35,8 +35,7 @@ export function TokenManagementTab({
 
       // 优先匹配 id，其次匹配 name（大小写不敏感）
       const duckcodingProvider = providers.find(
-        (p) =>
-          p.id.toLowerCase() === 'duckcoding' || p.name.toLowerCase() === 'duckcoding',
+        (p) => p.id.toLowerCase() === 'duckcoding' || p.name.toLowerCase() === 'duckcoding',
       );
 
       console.log('[TokenManagementTab] 找到的供应商:', duckcodingProvider);

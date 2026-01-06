@@ -251,7 +251,7 @@ export function EditTokenDialog({
                     <SelectItem key={group.id} value={group.id}>
                       <div className="flex items-center justify-between gap-4 w-full">
                         <span>{group.id}</span>
-                        <span className="text-xs text-muted-foreground">倍率: {group.ratio}</span>
+                        <span className="text-xs text-muted-foreground">{group.desc} (倍率: {group.ratio})</span>
                       </div>
                     </SelectItem>
                   ))

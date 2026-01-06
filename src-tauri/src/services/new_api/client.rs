@@ -81,7 +81,15 @@ impl NewApiClient {
             ));
         }
 
-        Ok(api_response.data.map(|d| d.items).unwrap_or_default())
+        // 标准化 API Key，确保所有令牌都有 sk- 前缀
+        let mut tokens = api_response.data.map(|d| d.items).unwrap_or_default();
+        for token in &mut tokens {
+            if !token.key.starts_with("sk-") {
+                token.key = format!("sk-{}", token.key);
+            }
+        }
+
+        Ok(tokens)
     }
 
     /// 获取所有令牌分组
