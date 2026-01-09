@@ -31,7 +31,7 @@ jobs:
             name: 'Linux-x64'
 
           # Linux ARM64 (native runner)
-          - platform: 'ubuntu-22.04-arm64'
+          - platform: 'ubuntu-22.04-arm'
             target: 'aarch64-unknown-linux-gnu'
             name: 'Linux-ARM64'
 
