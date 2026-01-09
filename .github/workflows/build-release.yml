@@ -77,12 +77,28 @@ jobs:
       - name: Install Linux dependencies (ARM64 cross-compile)
         if: matrix.platform == 'ubuntu-22.04' && matrix.arch == 'arm64'
         run: |
+          # Add ARM64 architecture
           sudo dpkg --add-architecture arm64
+
+          # Configure ARM64 sources using ports.ubuntu.com
+          sudo sed -i 's|^deb http://archive.ubuntu.com/ubuntu|deb [arch=amd64] http://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list
+          sudo sed -i 's|^deb http://security.ubuntu.com/ubuntu|deb [arch=amd64] http://security.ubuntu.com/ubuntu|g' /etc/apt/sources.list
+
+          # Add ARM64 sources from ports.ubuntu.com
+          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
+          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy-updates main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
+          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy-security main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
+
           sudo apt update
+
+          # Install cross-compile toolchain
           sudo apt install -y \
             gcc-aarch64-linux-gnu \
             g++-aarch64-linux-gnu \
-            build-essential curl wget file \
+            build-essential curl wget file
+
+          # Install ARM64 development libraries
+          sudo apt install -y \
             libwebkit2gtk-4.1-dev:arm64 \
             libjavascriptcoregtk-4.1-dev:arm64 \
             libssl-dev:arm64 \
